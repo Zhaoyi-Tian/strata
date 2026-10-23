@@ -13,7 +13,7 @@ def paint(text, style) -> str:
 
 def menu(title: str, options: list[str], start: int = 0) -> int:
     """上下键（或 j/k）移动，回车选定，返回选中的下标。选完只留一行「title › 选项」。"""
-    if not sys.stdin.isatty():
+    if not sys.stdin.isatty() or os.name == "nt":            # Windows 没有 termios，退回打字
         return _typed(title, options, start)
     import termios
     import tty

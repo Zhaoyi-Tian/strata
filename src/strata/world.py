@@ -4,6 +4,7 @@
   继承：要么有自己的值，要么随上一层；最上层总有自己的值。
   重抽：有一个时钟，时钟响时，以概率 mu 换成自己的一个值，否则改回随上一层。
 快慢：人的时钟平均隔 tau ~ tau·ratio 天响一次，村再慢 ratio 倍，地区再慢 ratio 倍；具体落在哪，因节点而异。
+真值可追溯：任何时刻都能查到一个值由哪个节点决定（source），以及它上次变是哪天（since）。只给评测用，不影响规律。
 """
 
 import random
@@ -29,6 +30,11 @@ class World:
         self.villages = [n for n in nodes if self.depth[n] == 1]
         self.people = [n for n in nodes if self.depth[n] == 2]
         self.residents = {v: [p for p in self.people if self.parent[p] == v] for v in self.villages}
+        self.below = {n: [n] for n in nodes}                    # 每个节点连同它下面的所有节点
+        for n in reversed(nodes):                               # 下层的编号总比上层大，所以倒着收
+            if self.parent[n] is not None:
+                self.below[self.parent[n]] += self.below[n]
+        self.since = {s: [0] * len(nodes) for s in self.slots}  # 每个节点在每个槽位上表现出来的值，上次变是哪天
         self.day = 0
 
     def _add(self, parent) -> int:
@@ -42,19 +48,27 @@ class World:
             return self.rng.choice(self.slots[s])
         return None
 
-    def value(self, n, s) -> str:
+    def source(self, n, s) -> int:
+        """n 在槽位 s 上表现出来的值由哪个节点决定：从 n 往上数，第一个有自己值的。"""
         own = self.own[s]
         while own[n] is None:
             n = self.parent[n]
-        return own[n]
+        return n
+
+    def value(self, n, s) -> str:
+        return self.own[s][self.source(n, s)]
 
     def step(self):
-        """过一天：每个（节点，槽位）的时钟以 1/τ 的概率响一次。"""
+        """过一天：每个（节点，槽位）的时钟以 1/τ 的概率响一次。顺手记下谁表现出来的值变了。"""
         self.day += 1
         for s, taus in self.tau.items():
             for n, t in enumerate(taus):
                 if self.rng.random() < 1 / t:
+                    before = [self.value(m, s) for m in self.below[n]]
                     self.own[s][n] = self._draw(n, s)
+                    for m, v in zip(self.below[n], before, strict=True):
+                        if self.value(m, s) != v:
+                            self.since[s][m] = self.day
 
     def chain(self, n) -> list[int]:
         """从最上层到 n 的一串节点。"""

@@ -6,6 +6,7 @@
 uv sync
 uv run strata                  # 自己玩一局：上下键选去哪、找谁，回车定下，q 退出
 uv run stratabench             # 跑分：几种采办在同样的世界里比成单率
+uv run python -m strata.env    # 打字玩文本版：LLM 看到的就是这个（Windows 也能玩）
 uv run python -m unittest discover -s tests
 ```
 
@@ -93,8 +94,10 @@ config/default.toml    世界和玩法的参数
 config/worldview.toml  世界观：特质、名字、台词（以后由 LLM 生成）
 src/strata/            世界和玩法
   world.py             世界：继承、重抽、快慢
-  game.py              采办这一局
+  game.py              采办这一局（规则只写这一遍，play() 和 env 都走它）
   view.py              把发生的事写成文字
+  env.py               文本接口：env.reset() / env.step("找 老秦") / env.truth()，给 LLM 玩，说明见 docs/env.md
+  mechanisms/          新机制挂在这里（传闻、指称订单……）
   term.py, __main__.py 自己玩
 src/stratabench/       跑分
   agents.py            几种采办

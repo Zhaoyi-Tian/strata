@@ -13,8 +13,8 @@ def _merge(a: dict, b: dict) -> dict:
 
 def load(path: str | Path | None = None) -> dict:
     """path 里只写要改的项。返回的 cfg["view"] 是世界观。"""
-    cfg = tomllib.loads((ROOT / "config" / "default.toml").read_text())
+    cfg = tomllib.loads((ROOT / "config" / "default.toml").read_text(encoding="utf-8"))
     if path:
-        cfg = _merge(cfg, tomllib.loads(Path(path).read_text()))
-    cfg["view"] = tomllib.loads((ROOT / cfg["worldview"]).read_text())
+        cfg = _merge(cfg, tomllib.loads(Path(path).read_text(encoding="utf-8")))
+    cfg["view"] = tomllib.loads((ROOT / cfg["worldview"]).read_text(encoding="utf-8"))
     return cfg

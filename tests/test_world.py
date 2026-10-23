@@ -47,6 +47,26 @@ class TestWorld(unittest.TestCase):
             self.assertLess(max(layer[2]), min(layer[1]))      # 人比村快
             self.assertLess(max(layer[1]), min(layer[0]))      # 村比地区快
 
+    def test_since_and_source(self):
+        """since 和逐日盯着看的结果一致；source 往上第一个有自己值的节点。"""
+        w = World(5, SLOTS, **CFG["world"])
+        nodes = range(len(w.depth))
+        last = {s: [w.value(n, s) for n in nodes] for s in SLOTS}
+        changed = {s: [0] * len(w.depth) for s in SLOTS}
+        for _ in range(600):
+            w.step()
+            for s in SLOTS:
+                for n in nodes:
+                    if w.value(n, s) != last[s][n]:
+                        last[s][n], changed[s][n] = w.value(n, s), w.day
+        self.assertEqual(w.since, changed)
+        self.assertTrue(any(d > 0 for s in SLOTS for d in changed[s]))
+        for s in SLOTS:
+            for n in nodes:
+                src = w.source(n, s)
+                self.assertIsNotNone(w.own[s][src])
+                self.assertTrue(all(w.own[s][m] is None for m in w.chain(n)[w.depth[src] + 1:]))
+
     def test_distance(self):
         w = World(0, SLOTS, **CFG["world"])
         a, b, c = w.villages[0], w.villages[1], w.villages[-1]
