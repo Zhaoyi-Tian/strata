@@ -1,0 +1,5 @@
+# 接口验收用短局；正式比较使用 config/default.toml。
+[game]
+lives = 2
+life = 4
+gap = 10

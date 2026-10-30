@@ -1,0 +1,56 @@
+# 独立的完整 Cordis 配置，由 run.mjs 用 dsh-app-boot 加载。没有继承 base/headless/sdk 的工具。
+- id: llm
+  name: '@deepseek-ai/dsh-llm'
+- id: llm-deepseek
+  name: '@deepseek-ai/dsh-llm-deepseek-api-key'
+  disabled: !!js ctx.strataOptions.provider !== 'deepseek-official'
+  config:
+    apiKeyEnv: DEEPSEEK_API_KEY
+    thinking: enabled
+    maxTokens: !!js ctx.strataOptions.maxTokens
+- id: session
+  name: '@deepseek-ai/dsh-session'
+- id: session-projection
+  name: '@deepseek-ai/dsh-session-projection'
+- id: token-meter
+  name: '@deepseek-ai/dsh-token-meter'
+- id: system-prompt
+  name: '@deepseek-ai/dsh-system-prompt'
+  config:
+    includeHarnessIdentity: false
+    includeRuntimeContext: false
+- id: tools
+  name: '@deepseek-ai/dsh-tools'
+  config:
+    mode: native
+- id: agent
+  name: '@deepseek-ai/dsh-agent'
+- id: agent-loop
+  name: '@deepseek-ai/dsh-agent-loop'
+  config:
+    agents: []
+    maxParallelToolCalls: 1
+- id: session-persistence
+  name: '@deepseek-ai/dsh-session-persistence-jsonl'
+  config:
+    root: !!js ctx.strataOptions.runDir + '/sessions'
+    compression: none
+- id: session-query
+  name: '@deepseek-ai/dsh-session-query-sqlite'
+  config:
+    path: ':memory:'
+    openAt: never
+- id: session-checkpoint-policy
+  name: '@deepseek-ai/dsh-session-checkpoint-policy'
+- id: dsh-strata
+  name: dsh-strata
+  config:
+    mode: !!js ctx.strataOptions.mode
+    contextTokens: !!js ctx.strataOptions.memory.contextTokens
+    fallbackBufferTokens: !!js ctx.strataOptions.memory.fallbackBufferTokens ?? 16384
+    reminderThresholdTokens: !!js ctx.strataOptions.memory.reminderThresholdTokens ?? 6144
+    summary:
+      maxTokens: !!js ctx.strataOptions.memory.summary?.maxTokens ?? 4096
+- id: strata-game
+  name: ./adapter.mjs
+  config: !!js ctx.strataOptions

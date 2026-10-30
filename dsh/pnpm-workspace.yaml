@@ -1,0 +1,5 @@
+packages:
+  - .
+autoInstallPeers: true
+allowBuilds:
+  koffi: false

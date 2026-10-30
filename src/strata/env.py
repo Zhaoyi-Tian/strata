@@ -9,7 +9,7 @@
 每天一到两问：
   先问「今天怎么办」：找 <人名>、不做（都是留在本村做）、去 <村名>、留下。
   去了别村，或说了「留下」，再问一次「找谁」：找 <人名>、不做。
-一世到头时 env.life_ended 为真，这一问回什么都行（runner 直接回「继续」）；失忆协议就在这时写遗书、清空上下文。
+一世到头时 env.life_ended 为真，这一问回什么都行（runner 直接回「继续」）；可在此实现另行定义的记忆干预。
 最后一世到头就是 done，没有这一问。
 看不懂的动作不消耗天数，提示后原样再问，info["parse_ok"] 为假。
 env.truth() 是此刻的真值，只给评测、归因和全知用，绝不能进 agent 的上下文。
@@ -66,7 +66,10 @@ class Env:
     @property
     def instructions(self) -> str:
         """常驻说明：开场白、地图、动作格式。整局不变。"""
-        return "\n\n".join([self.cfg["view"]["intro"], self.view.map(self.cfg["world"]["size"]), ACTIONS])
+        g = self.cfg["game"]
+        scoring = (f"一局 {g['lives']} 世，每世 {g['life']} 天，死后空转 {g['gap']} 天。"
+                   "目标是让整局的每天成单率尽可能高；路上的天和不做的天都算没成单。")
+        return "\n\n".join([self.cfg["view"]["intro"], scoring, self.view.map(self.cfg["world"]["size"]), ACTIONS])
 
     def reset(self) -> str:
         """开局，返回第一天的观察。"""
@@ -103,9 +106,24 @@ class Env:
             return people
         return people + [f"去 {self.name(v)}" for v in self.game.world.villages if v != self.ask.here] + ["留下"]
 
+    def observation(self) -> str:
+        """当前公开画面，供换窗后重绘；不含过往交易反馈，不推进时间，也不读取隐藏真值。"""
+        if self._steps is None:
+            raise RuntimeError("先调 reset()")
+        if self.done:
+            return "这一局已经结束了。"
+        ask = self.ask
+        if ask.kind == "death":
+            return f"第 {self.game.life} 世已经结束。\n{PROMPT['death']}"
+        return "\n".join([
+            f"第 {self.game.life} 世，第 {ask.day} 天，当前在{self.name(ask.here)}。",
+            "当前订单：" + "、".join(f"{s}：{v}" for s, v in ask.want.items()) + "。",
+            self.view.say("stalls", stalls=ask.stalls), PROMPT[ask.kind],
+        ])
+
     @property
     def life_ended(self) -> bool:
-        """一世刚到头、下一世还没开始。失忆协议在这时写遗书。"""
+        """一世刚到头、下一世还没开始。runner 可以直接续局，或执行另行定义的记忆干预。"""
         return not self.done and self.ask.kind == "death"
 
     # ---- 给评测的 ----

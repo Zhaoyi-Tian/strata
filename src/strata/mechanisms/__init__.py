@@ -10,8 +10,9 @@ Game 每天在两个固定的时刻调它：
 能用到的状态：game.world（真值，机制可以看）、game.here、game.want、game.life、game.log、game.say。
 
 约定：
-  机制要用随机数就自己开一个，比如 random.Random(f"{seed}:rumor")，不要动 world.rng 和 game.orders，
-  否则开不开机制，同一个 seed 的世界和订单就不一样了，没法对照。
+  机制要用随机数就自己开一个，比如 random.Random(f"{seed}:rumor")，不要动 world.rng。
+  基础订单由 game.order_at(day) 按世界日固定，出生地点由 seed 和世数固定。机制改订单时也应按日取随机数，
+  避免不同走法调用次数不同，导致后续订单错位。
   需要别的时刻（比如过秤之后）就在 Game.run() 里加一个，并在这里写清楚。
 """
 

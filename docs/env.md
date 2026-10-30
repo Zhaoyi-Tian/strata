@@ -39,8 +39,7 @@ env = Env(load(), seed=seed)
 system = env.instructions
 obs = env.reset()
 while not env.done:
-    if env.life_ended:            # 失忆协议在这里：写遗书、清空上下文。全上下文模式什么都不做
-        agent.end_life(obs)
+    if env.life_ended:            # 记忆干预由实验另行定义；这里只续到下一世
         action = "继续"           # 这一问不必调 LLM
     else:
         action = agent.act(obs)
@@ -50,6 +49,7 @@ score = env.lives                 # 每一世每天成没成单（list[list[bool
 ```
 
 最后一世到头直接 `done`，没有 `death` 这一问。
+是否在死亡时做记忆干预由实验另行定义。[dsh 适配](dsh.md) 直接续局，不额外清空上下文。
 
 ## API
 
@@ -60,6 +60,7 @@ score = env.lives                 # 每一世每天成没成单（list[list[bool
 | `env.reset() -> str` | 开局；再调一次就从头再来（同一个 seed，同一个世界） |
 | `env.step(action) -> (obs, done, info)` | 回一个动作 |
 | `env.legal_actions() -> list[str]` | 此刻能回的所有动作（给不给 agent 看，由实验设置决定） |
+| `env.observation() -> str` | 当前完整公开画面，用于换窗后重绘；不包含过往交易反馈，不推进世界 |
 | `env.life_ended` | 一世刚到头、下一世还没开始 |
 | `env.done` | 整局结束 |
 | `env.lives` | 已经过完的每一世，每天成没成单 |
@@ -101,7 +102,7 @@ score = env.lives                 # 每一世每天成没成单（list[list[bool
 
 ## 示例对局
 
-分层推断通过文本接口玩 seed 0（默认世界）。`>` 后面是动作，其余是 `reset()` / `step()` 返回的观察。
+下面展示文本格式，具体名字、订单和日期以当前运行输出为准。`>` 后面是动作，其余是 `reset()` / `step()` 返回的观察。
 
 开头：
 
@@ -163,14 +164,14 @@ score = env.lives                 # 每一世每天成没成单（list[list[bool
 
 ## 给玩法 A 的挂钩
 
-新机制继承 `strata.mechanisms.Mechanism`，Game 每天在两个时刻调它：`order(game, want)`（订单刚生成，可以改）和 `news(game)`（订单和摊子说完、拿主意之前，可以 `game.say(...)` 加话）。机制自己开随机数，不要动 `world.rng` 和 `game.orders`，否则开不开机制世界就不一样了。详见 `src/strata/mechanisms/__init__.py`。
+新机制继承 `strata.mechanisms.Mechanism`，Game 每天在两个时刻调它：`order(game, want)`（基础订单已按日生成，可以改）和 `news(game)`（订单和摊子说完、拿主意之前，可以 `game.say(...)` 加话）。机制自己按日取随机数，不要动 `world.rng`；这样调用次数不同也不会让后续外部条件漂移。详见 `src/strata/mechanisms/__init__.py`。
 
 ## 不变量
 
-- 只改接口时，`tests/test_env.py` 里的 `BEFORE`（原版规则下各基线的成绩和逐日指纹）必须不变。改了规则它会变，那是对的：重新跑一遍，同步 README 里的表。
-- 同一个 seed：同一个世界、同一串订单，和 agent 怎么走无关。
+- 只改接口时，`tests/test_env.py` 里的 `BEFORE`（`daily-orders-v2` 下各基线的成绩和逐日指纹）必须不变。改了规则需重新计算，并同步 README。
+- 同配置、同 seed：同一天的世界状态、同一接单日的基础订单、每世出生地点和生命周期日期固定。旅行途中不另接单。
+- 人名按世界节点编号固定，走访顺序不改变名字；未见过的人仍返回 `None`。
 
 ## 还没定的
 
-- **人名按出场先后起**（`view.py` 原来的设计）：不同 agent 走的路线不同，同一个人在两局里可能叫不同的名字。对 agent 没影响；跨 agent 比较时请用节点编号（`events`、`truth()` 里都是编号）。要不要改成按编号固定起名，等照亿定。
 - `legal_actions()` 给不给 LLM 看：给了就少了格式错误，但也提示了"这里有哪些人"。建议作为实验设置的一个开关，默认不给。

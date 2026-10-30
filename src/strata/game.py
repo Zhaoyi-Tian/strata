@@ -4,7 +4,7 @@
 例如「找一个卖铁、守信的人」）；留下或去别村（同一地区当天就到，别的地区走一天）；挑一个人做这单（也可以不做），
 各方面都对上就成了，做完才知道他的隐藏特质；挑了不卖这样货的人，就等于不做。
 一世活满就死，世间空转一段时间，带着全部记忆在随便哪个村重生。
-世界和订单各用独立的随机数，所以所有采办面对的是同一个世界、同一串订单。
+世界、按日订单和每世出生地点使用独立的随机数，所以走法不改变外部条件。
 
 规则只写一遍，在 Game.run() 里：它是个生成器，每到要拿主意的时候就 yield 一个 Ask，等外面 send() 回主意。
   play()           回调式，给规则采办用（agent.go / choose / observe），和以前一样。
@@ -22,7 +22,7 @@ class Ask:
     """一个要拿主意的时刻。
     go：     去哪。回一个村（回 here 就是留下）。
     choose： 找谁。回 stalls 里的一个人，或 None（不做）。
-    death：  一世到头、下一世开始之前（最后一世没有这一问）。回什么都行；失忆协议在这时写遗书。"""
+    death：  一世到头、下一世开始之前（最后一世没有这一问）。回什么都行；可在此做独立定义的记忆干预。"""
 
     kind: str
     day: int
@@ -40,12 +40,16 @@ class Game:
         self.world = World(g["seed"], {s["name"]: s["values"] for s in self.slots}, **cfg["world"])
         self.visible = [s["name"] for s in self.slots if s["visible"]]
         self.hidden = [s["name"] for s in self.slots if not s["visible"]]
-        self.orders = random.Random(f"{g['seed']}:orders")
         self.say = say or (lambda kind, **kw: None)
         self.observe = observe or (lambda day, p, seen: None)
         self.mechanisms = list(mechanisms)
         self.lives: list[list[bool]] = []                     # 每一世每天成没成单（在路上的那天算没成）
         self.life, self.log, self.here, self.want = 0, [], None, {}
+
+    def order_at(self, day: int) -> dict:
+        """某个世界日的基础订单；按日取随机数，路上跳过几天也不会挪动后面的订单。"""
+        rng = random.Random(f"{self.cfg['game']['seed']}:orders:{day}")
+        return {s["name"]: rng.choice(s["values"]) if s["visible"] else s["values"][0] for s in self.slots}
 
     def look(self, village) -> dict:
         stalls = {p: {s: self.world.value(p, s) for s in self.visible} for p in self.world.residents[village]}
@@ -60,12 +64,13 @@ class Game:
             self.life = life
             if life > 1:
                 self.say("rebirth", life=life)
-            here, log = self.orders.choice(world.villages), []
+            here = random.Random(f"{g['seed']}:spawn:{life}").choice(world.villages)
+            log = []
             self.here, self.log = here, log
             while len(log) < g["life"]:
                 world.step()
                 stalls = self.look(here)
-                want = {s["name"]: self.orders.choice(s["values"]) if s["visible"] else s["values"][0] for s in self.slots}
+                want = self.order_at(world.day)
                 for m in self.mechanisms:
                     want = m.order(self, want)
                 self.want = want
@@ -78,11 +83,13 @@ class Game:
                     days = world.distance(here, dest)
                     self.say("travel" if days else "walk", village=world.villages.index(dest), days=days)
                     for _ in range(days):
+                        log.append(False)
+                        if len(log) >= g["life"]:
+                            break
                         world.step()
-                    log += [False] * days
-                    here = self.here = dest
                     if len(log) >= g["life"]:
                         break
+                    here = self.here = dest
                     stalls = self.look(here)
                     self.say("stalls", stalls=stalls)
                 p = yield Ask("choose", world.day, here, want, stalls)

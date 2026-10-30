@@ -8,11 +8,10 @@ class View:
         self.names = {k: {} for k in self.pools}
 
     def name(self, kind, n) -> str:
-        """地区、村按编号起名，人按出场先后；名字不够用时自动加编号。"""
+        """都按编号起名，人物使用世界节点编号；名字不够用时自动加编号。"""
         names, pool = self.names[kind], self.pools[kind]
         if n not in names:
-            i = len(names) if kind == "person" else n
-            names[n] = pool[i % len(pool)] + (str(i // len(pool) + 1) if i >= len(pool) else "")
+            names[n] = pool[n % len(pool)] + (str(n // len(pool) + 1) if n >= len(pool) else "")
         return names[n]
 
     def find(self, kind, name):
