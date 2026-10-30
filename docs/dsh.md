@@ -2,11 +2,11 @@
 
 适配代码在本仓库的 `dsh/`，上下文算法仍由独立仓库 `dsh-strata` 提供。
 每次运行只创建一个 dsh Agent 和一个常驻 Python `Env`。dsh 的原生 AgentLoop 调用
-`strata_step({"action": "找 老秦"})`，Python 返回交易反馈和下一问。环境结束后，在下一次采样前直接收尾。没有另一套模型循环。
+`strata_step({"action": "不做"})`，Python 返回交易反馈和下一问。环境结束后，在下一次采样前直接收尾。没有另一套模型循环。
 
 ## 安装
 
-需要 Python 3.12+、uv、Node.js 26+ 和 pnpm 11。本次使用 Node 26.7.0，固定验证 dsh `0.2.1-alpha.2`。
+需要 Python 3.12+、uv、Node.js 26+ 和 pnpm 11。依赖固定为 dsh `0.2.1-alpha.2`，安装时使用仓库中的 lockfile。
 Session JSONL 依赖会静态导入 Node 的 Zstandard API，选择明文日志也不会省去这项运行时依赖。
 两个仓库默认放在相邻目录：
 
@@ -69,7 +69,7 @@ node dsh/run.mjs \
 
 ## 配置
 
-`node dsh/run.mjs --help` 查看入口。数值都以 token 或次数为单位。
+`node dsh/run.mjs --help` 查看入口与可用参数。
 
 | 参数 | 默认 | 用途 |
 | --- | --- | --- |
@@ -84,9 +84,9 @@ node dsh/run.mjs \
 | `--fallback-buffer` | `16384` | notes 保存检查点的缓冲，必须小于可用硬上限 |
 | `--reminder-tokens` | `6144` | notes 提醒阈值 |
 | `--env-file` | 不加载文件 | 显式读取 API key 的文件 |
-| `--output` | `results/dsh/` | 输出根目录；本机建议显式指定上面的 Temp 路径 |
+| `--output` | `strata/results/dsh/` | 输出根目录；本机建议显式指定上面的 Temp 路径 |
 
-自定义摘要或 notes 提示词，直接在 `dsh/profile.yml` 的 `dsh-strata` 行增加插件支持的 `prompts` 字段。
+自定义摘要或 notes 提示词，直接在 `dsh/profile.yml` 的 `dsh-strata.config` 下增加插件支持的 `prompts` 字段。
 不要改 Python 环境来实现记忆算法。插件的完整参数见相邻仓库的 README。
 
 ## 极简 profile
@@ -171,5 +171,4 @@ Node 测试使用脚本模型，经过真实 profile、常驻 Python 环境和�
 跨窗恢复、连续摘要、思考日志、真值隔离，以及提前结束、API 错误和请求上限的未完成判定。
 
 运行依赖安装在本地 `dsh/node_modules/`；需要重新安装时可删除它，保留源码和 lockfile。pnpm 的工具缓存由 pnpm 管理。
-本次验证用 `uvx` 获取了 Ruff，工具缓存由 uv 管理，位于本机 `~/.cache/uv/`，未向系统 Python 安装依赖；
-不再需要时可运行 `uv cache clean ruff` 清理这个工具的缓存。对局日志保留在指定的输出目录，测试临时目录自动清理。
+对局日志保留在指定的输出目录，测试临时目录自动清理。

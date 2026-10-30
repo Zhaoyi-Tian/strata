@@ -4,7 +4,7 @@
     env = Env(load(), seed=0)
     env.instructions                      # 常驻说明：开场白、地图、动作格式。放进 system prompt，不算要记的东西
     obs = env.reset()                     # 第一天：订单、本村的摊子，问你今天怎么办
-    obs, done, info = env.step("找 老秦")  # 结果，以及第二天的订单和摊子
+    obs, done, info = env.step("不做")    # 结果，以及第二天的订单和摊子
 
 每天一到两问：
   先问「今天怎么办」：找 <人名>、不做（都是留在本村做）、去 <村名>、留下。
@@ -14,7 +14,7 @@
 看不懂的动作不消耗天数，提示后原样再问，info["parse_ok"] 为假。
 env.truth() 是此刻的真值，只给评测、归因和全知用，绝不能进 agent 的上下文。
 
-自己在终端里打字玩（Windows 也行）：python -m strata.env [--config 文件] [--seed N]
+自己在终端里打字玩（Windows 也行）：uv run python -m strata.env [--config 文件] [--seed N]
 """
 
 import argparse
