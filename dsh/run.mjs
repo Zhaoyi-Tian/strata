@@ -33,9 +33,7 @@ export async function runEpisode(input = {}, { setup, signal } = {}) {
   const json = (file, value) => writeFileSync(join(options.runDir, file), JSON.stringify(value, null, 2) + '\n')
   json('run.json', { ...options, protocol: 'daily-orders-v2' })
   copyFileSync(profilePath, join(options.runDir, 'profile.yml'))
-  const apiPath = join(options.runDir, 'api.jsonl')
-  writeFileSync(apiPath, '', { flag: 'wx' })
-  const audit = value => appendFileSync(apiPath, JSON.stringify(value) + '\n')
+  writeFileSync(join(options.runDir, 'api.jsonl'), '', { flag: 'wx' })
   const calls = []
   let ctx, agent, error, reason, stoppedAtGameEnd = false
   const cancel = () => agent?.cancel({ kind: 'user' })
@@ -44,30 +42,7 @@ export async function runEpisode(input = {}, { setup, signal } = {}) {
     ctx = await boot('strata', profilePath, [], async host => {
       host.provide('strataOptions', options)
       if (setup) await setup(host)
-      host.on('llm/stream', (request, next) => (async function* () {
-        if (calls.length >= options.maxRequests) {
-          audit({ type: 'request-limit', maxRequests: options.maxRequests })
-          throw new Error(`Run request limit reached (${options.maxRequests})`)
-        }
-        const id = calls.length + 1
-        const { signal: _signal, ...loggedRequest } = request
-        const call = { id, purpose: request.purpose ?? 'task' }
-        calls.push(call)
-        audit({ type: 'request', id, request: loggedRequest })
-        const assembler = new BlockAssembler()
-        const chunks = []
-        const started = Date.now()
-        try {
-          for await (const chunk of next()) { chunks.push(chunk); assembler.push(chunk); yield chunk }
-        } catch (failure) {
-          call.error = String(failure)
-          throw failure
-        } finally {
-          call.usage = assembler.usage
-          call.elapsedMs = Date.now() - started
-          audit({ type: 'response', ...call, stream: chunks })
-        }
-      })(), { prepend: true })
+      registerModelLog(host, options, calls)
     })
     // This profile has no optional enabled plugins. Cordis FiberState.ACTIVE is 2.
     const inactive = [...ctx.get('loader').entries()].filter(entry => !entry.disabled && entry.fiber?.state !== 2)
@@ -99,35 +74,69 @@ export async function runEpisode(input = {}, { setup, signal } = {}) {
   }
   let result
   try {
-    const game = ctx?.get('strataGame')
-    const current = game?.current
-    const completed = !error && current?.done === true && stoppedAtGameEnd && reason?.kind === 'blocked'
-    const lives = current?.lives ?? []
-    const all = lives.flat()
-    const early = lives.slice(1).flatMap(life => life.slice(0, 20))
-    const mean = values => values.length ? values.filter(Boolean).length / values.length : null
-    const usage = {}
-    for (const call of calls) for (const [key, count] of Object.entries(call.usage ?? {})) {
-      if (typeof count === 'number') usage[key] = (usage[key] ?? 0) + count
-    }
-    const events = agent?.session.snapshotEvents() ?? []
-    result = {
-      eval_completed: completed, termination: completed ? 'env_done' : reason?.kind ?? 'startup_error',
-      error: error ?? null, runDir: options.runDir,
-      mode: options.mode, seed: options.seed, provider: options.provider, model: options.model,
-      sessionId: agent?.session.id ?? null, daysPlayed: current?.days_played ?? 0,
-      actions: game?.actions ?? 0, invalidActions: game?.invalidActions ?? 0,
-      calls: calls.length, summaryCalls: calls.filter(call => call.purpose === 'compaction').length,
-      windows: events.filter(event => event.type === 'user/message' && event.data.source.kind === 'context-window'
-        && event.data.source.event === 'open').length,
-      usage, callsWithoutUsage: calls.filter(call => call.usage === undefined).length,
-      score: completed ? { overall: mean(all), perLife: lives.map(mean), rebirthEarly: mean(early), lives } : null,
-    }
+    result = summarizeRun(options, { game: ctx?.get('strataGame'), agent, calls, error, reason, stoppedAtGameEnd })
   } finally {
     await ctx?.fiber.dispose()
   }
   json('summary.json', result)
   return result
+}
+
+/** Record task and summary requests through the same model stream hook. */
+function registerModelLog(ctx, options, calls) {
+  const apiPath = join(options.runDir, 'api.jsonl')
+  const audit = value => appendFileSync(apiPath, JSON.stringify(value) + '\n')
+  ctx.on('llm/stream', (request, next) => (async function* () {
+    if (calls.length >= options.maxRequests) {
+      audit({ type: 'request-limit', maxRequests: options.maxRequests })
+      throw new Error(`Run request limit reached (${options.maxRequests})`)
+    }
+    const id = calls.length + 1
+    const { signal: _signal, ...loggedRequest } = request
+    const call = { id, purpose: request.purpose ?? 'task' }
+    calls.push(call)
+    audit({ type: 'request', id, request: loggedRequest })
+    const assembler = new BlockAssembler()
+    const chunks = []
+    const started = Date.now()
+    try {
+      for await (const chunk of next()) { chunks.push(chunk); assembler.push(chunk); yield chunk }
+    } catch (failure) {
+      call.error = String(failure)
+      throw failure
+    } finally {
+      call.usage = assembler.usage
+      call.elapsedMs = Date.now() - started
+      audit({ type: 'response', ...call, stream: chunks })
+    }
+  })(), { prepend: true })
+}
+
+/** Combine the final game state, model usage and native session events for summary.json. */
+function summarizeRun(options, { game, agent, calls, error, reason, stoppedAtGameEnd }) {
+  const current = game?.current
+  const completed = !error && current?.done === true && stoppedAtGameEnd && reason?.kind === 'blocked'
+  const lives = current?.lives ?? []
+  const all = lives.flat()
+  const early = lives.slice(1).flatMap(life => life.slice(0, 20))
+  const mean = values => values.length ? values.filter(Boolean).length / values.length : null
+  const usage = {}
+  for (const call of calls) for (const [key, count] of Object.entries(call.usage ?? {})) {
+    if (typeof count === 'number') usage[key] = (usage[key] ?? 0) + count
+  }
+  const events = agent?.session.snapshotEvents() ?? []
+  return {
+    eval_completed: completed, termination: completed ? 'env_done' : reason?.kind ?? 'startup_error',
+    error: error ?? null, runDir: options.runDir,
+    mode: options.mode, seed: options.seed, provider: options.provider, model: options.model,
+    sessionId: agent?.session.id ?? null, daysPlayed: current?.days_played ?? 0,
+    actions: game?.actions ?? 0, invalidActions: game?.invalidActions ?? 0,
+    calls: calls.length, summaryCalls: calls.filter(call => call.purpose === 'compaction').length,
+    windows: events.filter(event => event.type === 'user/message' && event.data.source.kind === 'context-window'
+      && event.data.source.event === 'open').length,
+    usage, callsWithoutUsage: calls.filter(call => call.usage === undefined).length,
+    score: completed ? { overall: mean(all), perLife: lives.map(mean), rebirthEarly: mean(early), lives } : null,
+  }
 }
 
 async function main() {

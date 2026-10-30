@@ -74,7 +74,7 @@ export async function apply(ctx, options) {
     name: 'strata-rules', order: 0, complete: true, interpolate: false,
     text: `你在玩一个持续到整局结束的采办游戏。目标是最大化每天成单率。\n`
       + `下面动作说明里的“每一步只回一个动作”约束 strata_step 的 action 字段。实际请调用 strata_step 工具，`
-      + `不要用普通文字代替动作。记笔记、查历史、换窗等记忆工具可以随时按需使用，它们不推进游戏。\n`
+      + `不要用普通文字代替动作。\n`
       + `请持续操作到 strata_step 返回“整局结束”，再给最终答复。死亡与重生由环境自动推进。\n\n`
       + initial.instructions,
   })
@@ -84,7 +84,7 @@ export async function apply(ctx, options) {
   })
   ctx.tools.register(defineTool({
     name: 'strata_step',
-    description: '执行一个游戏动作，返回结果和下一问。记忆工具不会推进游戏。整局结束后停止调用。',
+    description: '执行一个游戏动作，返回结果和下一问。整局结束后停止调用。',
     parameters: { action: { type: 'string', required: true, description: '找 <人名> / 不做 / 去 <村名> / 留下' } },
     output: { schema: { type: 'string' }, render: (_args, text) => [{ type: 'text', text }] },
     async execute({ action }, exec) {

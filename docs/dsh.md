@@ -118,6 +118,7 @@ node dsh/run.mjs \
 - `Env.reset()` 每局只调用一次；模型没有 reset、truth 或任意 Python 执行工具。
 - `env.instructions` 常驻 system，包含玩法、地图、总时长、目标和动作格式。
   “只回一个动作”仅约束 `strata_step.action`，不禁止模型调用记忆工具。
+  记笔记、查历史和换窗的使用说明由上下文插件在 notes 模式提供。
 - 每次请求通过 dsh 的动态 context 提供 `env.observation()`：当前世数、日期、地点、订单、公开摊子和提问阶段。
   它不包含上次交易的隐藏特质反馈。旧反馈、过往摊子和经验都属于历史，由所选记忆模式负责保存。
 - `strata_step` 的结果保留原始反馈。换窗后重新绘制当前画面，但不推进世界，也不恢复已经清掉的经历。
