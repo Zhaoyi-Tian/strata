@@ -4,6 +4,7 @@ import { appendFileSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } 
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
+import { load as loadYaml } from 'js-yaml'
 import { boot } from '@deepseek-ai/dsh-app-boot'
 import { BlockAssembler, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -11,7 +12,7 @@ import { Config as ContextConfig, resolveConfig as resolveContextConfig } from '
 
 export const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const profilePath = fileURLToPath(new URL('./profile.yml', import.meta.url))
-const configPath = fileURLToPath(new URL('./config.json', import.meta.url))
+const configPath = fileURLToPath(new URL('./config.yml', import.meta.url))
 
 function positive(value, name, minimum = 1) {
   if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${name} must be an integer >= ${minimum}`)
@@ -20,7 +21,7 @@ function positive(value, name, minimum = 1) {
 
 /** Exposed for the scripted end-to-end test; setup may register a model adapter, never another loop. */
 export async function runEpisode(input = {}, { setup, signal } = {}) {
-  const settings = JSON.parse(readFileSync(input.runConfig ?? configPath, 'utf8'))
+  const settings = loadYaml(readFileSync(input.runConfig ?? configPath, 'utf8'))
   const options = {
     projectRoot, seed: 0, output: resolve(projectRoot, 'results/dsh'), ...settings, ...input,
     model: { ...settings.model, ...input.model },
@@ -152,9 +153,9 @@ async function main() {
   const names = ['mode', 'seed', 'config', 'run-config', 'output', 'env-file']
   const { values } = parseArgs({ options: { ...Object.fromEntries(names.map(name => [name, { type: 'string' }])), help: { type: 'boolean' } } })
   if (values.help) {
-    console.log('node dsh/run.mjs [--run-config dsh/config.json] [--mode notes] [--seed 0]\n'
+    console.log('node dsh/run.mjs [--run-config dsh/config.yml] [--mode notes] [--seed 0]\n'
       + '  [--config config/dsh-smoke.toml] [--output DIR] [--env-file FILE]\n'
-      + 'Model and context controls live in dsh/config.json; --mode overrides context.mode.\n'
+      + 'Model and context controls live in dsh/config.yml; --mode overrides context.mode.\n'
       + 'See docs/dsh.md for field meanings and experiment configuration.')
     return
   }

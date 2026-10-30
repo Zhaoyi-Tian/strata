@@ -62,6 +62,9 @@ importers:
       dsh-strata:
         specifier: file:../../dsh-strata
         version: file:../../dsh-strata(f20e71fbb4185da76eab6ee869d515f4)
+      js-yaml:
+        specifier: 4.3.2
+        version: 4.3.2
     dependenciesMeta:
       dsh-strata:
         injected: true

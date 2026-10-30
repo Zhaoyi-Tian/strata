@@ -53,34 +53,44 @@ node dsh/run.mjs \
 
 ## 统一实验配置
 
-常调项集中在 [dsh/config.json](../dsh/config.json)。`dsh/profile.yml` 只负责挂载插件，不再重复填写阈值或输出预算。
+常调项集中在 [dsh/config.yml](../dsh/config.yml)。`dsh/profile.yml` 只负责挂载插件，不再重复填写阈值或输出预算。
 默认配置如下，各模式的上下文阈值可以独立调整：
 
-```json
-{
-  "model": {
-    "provider": "deepseek-official",
-    "id": "deepseek-flash",
-    "reasoningEffort": "high",
-    "maxOutputTokens": 8192
-  },
-  "context": {
-    "mode": "notes",
-    "notes": {
-      "remindAtTokens": 59392,
-      "checkpointAtTokens": 65536,
-      "forceSwitchAtTokens": 81920
-    },
-    "summary": {
-      "compactAtTokens": 81920,
-      "maxOutputTokens": null
-    },
-    "full": {
-      "stopAtTokens": 81920
-    }
-  },
-  "maxRequests": 10000
-}
+```yaml
+# Strata 实验配置。复制这份文件，再用 --run-config 指定，可保存不同实验设置。
+# --mode 可临时覆盖 context.mode；游戏规则另由 --config 指定的 TOML 控制。
+
+# 一、模型：所有模式共用，摘要调用也使用相同模型和思考强度。
+model:
+  provider: deepseek-official
+  id: deepseek-flash
+  reasoningEffort: high       # 思考强度：off / low / high / max
+  maxOutputTokens: 8192       # 单次总输出上限，包含思考、回答和工具调用
+
+# 二、上下文策略：每次只启用一种模式，各模式阈值独立设置。
+# AtTokens 均指当前上下文已用 token 数，在下一次模型请求前检查。
+# 它们不是剩余 token 数，也不是整局累计消耗。
+context:
+  mode: notes                # notes / summary / full
+
+  # 自主笔记与切窗：提醒 → 保存检查点 → 强制切窗。
+  # 阈值顺序：remindAtTokens <= checkpointAtTokens < forceSwitchAtTokens。
+  notes:
+    remindAtTokens: 59392       # 提醒准备记笔记、主动换窗，每窗一次
+    checkpointAtTokens: 65536   # 要求立即保存检查点并调用 new_context，每窗一次
+    forceSwitchAtTokens: 81920  # 到此强制切窗；null 表示按模型可用容量
+
+  # 全文摘要：达到阈值后，把全部当前历史压成一份摘要。
+  summary:
+    compactAtTokens: 81920    # 触发压缩；null 表示按模型可用容量
+    maxOutputTokens: null     # null 继承 model.maxOutputTokens；可单独限制摘要输出（含思考）
+
+  # 全上下文：保留完整历史，达到阈值就结束实验并记为未完成。
+  full:
+    stopAtTokens: 81920       # null 表示不设插件阈值，由模型 API 容量限制
+
+# 三、运行限制：防止一局无限调用；达到上限记为未完成。
+maxRequests: 10000            # 包含正常模型请求和摘要请求
 ```
 
 | 字段 | 语义 |
@@ -111,12 +121,12 @@ notes 要满足 `remindAtTokens <= checkpointAtTokens`；配置有限的强制�
 
 ```sh
 node dsh/run.mjs \
-  --run-config /Users/tzy/WorkSpace/Temp/strata-dsh/experiment.json \
+  --run-config /Users/tzy/WorkSpace/Temp/strata-dsh/experiment.yml \
   --mode summary --seed 0 --config config/dsh-smoke.toml \
   --env-file ../.env --output /Users/tzy/WorkSpace/Temp/strata-dsh/runs
 ```
 
-这里 `experiment.json` 是你从 `dsh/config.json` 复制并编辑的完整配置文件；`--mode` 可临时覆盖其中的 `context.mode`。
+这里 `experiment.yml` 是你从 `dsh/config.yml` 复制并编辑的完整配置文件；`--mode` 可临时覆盖其中的 `context.mode`。
 短局检查可以把 `summary.compactAtTokens` 调成 6144，或把 notes 三个阈值依次设成 5120、6144、8192。
 是否实际触发以 `summaryCalls` 和 `windows` 为准，短局和小窗口分数不当成正式 benchmark 结果。
 
@@ -124,7 +134,7 @@ node dsh/run.mjs \
 
 | 参数 | 默认 / 含义 |
 | --- | --- |
-| `--run-config` | 仓库中的 `dsh/config.json`；统一模型与上下文配置 |
+| `--run-config` | 仓库中的 `dsh/config.yml`；统一模型与上下文配置 |
 | `--mode` | 不传则使用配置文件中的 `context.mode` |
 | `--seed` | `0`；世界、按日订单和出生地点的共同种子 |
 | `--config` | 游戏默认配置；Strata TOML，独立于模型配置 |

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
+import { load as loadYaml, dump as dumpYaml } from 'js-yaml'
 import { LlmAdapter, ToolCallId } from '@deepseek-ai/dsh-llm'
 import { projectRoot, runEpisode } from '../run.mjs'
 
@@ -143,11 +144,11 @@ test('request limits terminate the run as incomplete', async () => {
 
 test('full context limit ends an experiment as incomplete and keeps the original session', async () => {
   const dir = mkdtempSync(join(root, 'config-'))
-  const runConfig = join(dir, 'experiment.json')
-  const settings = JSON.parse(readFileSync(join(projectRoot, 'dsh/config.json'), 'utf8'))
+  const runConfig = join(dir, 'experiment.yml')
+  const settings = loadYaml(readFileSync(join(projectRoot, 'dsh/config.yml'), 'utf8'))
   settings.model.id = 'controlled-model'
   settings.context.full.stopAtTokens = 1000
-  writeFileSync(runConfig, JSON.stringify(settings))
+  writeFileSync(runConfig, '# 本轮实验的独立配置\n' + dumpYaml(settings))
   try {
     await trial('full', undefined, result => {
       assert.equal(result.eval_completed, false)
