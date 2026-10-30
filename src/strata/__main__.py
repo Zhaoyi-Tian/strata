@@ -6,7 +6,7 @@ import argparse
 
 from . import term
 from .config import load
-from .game import play
+from .game import Game
 from .view import View
 
 
@@ -15,11 +15,9 @@ class Player:
 
     def __init__(self, world, view):
         self.world, self.view = world, view
-        self.regions = [n for n, d in enumerate(world.depth) if d == 0]
 
     def place(self, v) -> tuple[str, str]:
-        return (self.view.name("village", self.world.villages.index(v)),
-                self.view.name("region", self.regions.index(self.world.parent[v])))
+        return self.view.name(v), self.view.name(self.world.parent[v])
 
     def go(self, day, here, want, stalls):
         near = sorted(self.world.villages, key=lambda v: (v != here, self.world.distance(here, v), v))
@@ -33,7 +31,7 @@ class Player:
 
     def choose(self, day, want, stalls):
         people = list(stalls)
-        options = [f"{self.view.name('person', p)}  " + "、".join(term.paint(v, "want") if want[s] == v else v
+        options = [f"{self.view.name(p)}  " + "、".join(term.paint(v, "want") if want[s] == v else v
                                                                  for s, v in stalls[p].items()) for p in people]
         fits = [k for k, p in enumerate(people) if all(want[s] == v for s, v in stalls[p].items())]
         k = term.menu("找谁", [*options, "今天不做"], start=fits[0] if fits else len(people))
@@ -71,12 +69,13 @@ def main():
     cfg = load(a.config)
     if a.seed is not None:
         cfg["game"]["seed"] = a.seed
-    view = View(cfg["view"])
-    visible = [s["name"] for s in cfg["view"]["slots"] if s["visible"]]
+    game = Game(cfg)
+    view = View(cfg["view"], game.world)
+    game.say = show(view, game.visible)
 
-    print(cfg["view"]["intro"], "", view.map(cfg["world"]["size"]), sep="\n")
+    print(cfg["view"]["intro"], "", view.map(), sep="\n")
     try:
-        lives = play(cfg, lambda world, _: Player(world, view), show(view, visible))
+        lives = game.play(lambda world, _: Player(world, view))
     except (EOFError, KeyboardInterrupt):
         print("\n不玩了。")
         return

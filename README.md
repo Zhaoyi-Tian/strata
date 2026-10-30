@@ -11,6 +11,7 @@ uv run python -m unittest discover -s tests
 ```
 
 LLM 对局适配与极简 dsh profile 在 [dsh/](dsh/)。安装、三种上下文模式、参数和日志说明见 [docs/dsh.md](docs/dsh.md)。
+玩法状态、阶段转换和逐日结算由 `Game` 统一负责；文本接口与内核边界见 [docs/env.md](docs/env.md#内核与显示边界)。
 
 ## 世界的规则
 
@@ -96,8 +97,8 @@ config/default.toml    世界和玩法的参数
 config/worldview.toml  世界观：特质、名字、台词（以后由 LLM 生成）
 src/strata/            世界和玩法
   world.py             世界：继承、重抽、快慢
-  game.py              采办这一局（规则只写这一遍，play() 和 env 都走它）
-  view.py              把发生的事写成文字
+  game.py              显式阶段与统一逐日结算（play() 和 env 都用 start / step）
+  view.py              世界节点编号起名，把发生的事写成文字
   env.py               文本接口：env.reset() / env.step("找 老秦") / env.truth()，给 LLM 玩，说明见 docs/env.md
   mechanisms/          新机制挂在这里（传闻、指称订单……）
   term.py, __main__.py 自己玩

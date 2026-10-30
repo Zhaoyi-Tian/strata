@@ -26,8 +26,7 @@ class Episode:
     def public(self, feedback, parse_ok=True):
         return {"feedback": feedback, "observation": self.env.observation(), "done": self.env.done,
                 "parse_ok": parse_ok, "lives": self.env.lives, "life": self.env.game.life,
-                "day": self.env.world.day, "days_played": sum(map(len, self.env.lives))
-                + (0 if self.env.done else len(self.env.game.log))}
+                "day": self.env.world.day, "days_played": self.env.game.days_played}
 
     def step(self, action):
         if not isinstance(action, str):
@@ -49,11 +48,11 @@ def main():
     ap.add_argument("--log", type=Path, required=True)
     args = ap.parse_args()
     cfg = load(args.config)
-    if any(not isinstance(cfg["game"][key], int) or cfg["game"][key] < minimum
-           for key, minimum in (("lives", 1), ("life", 1), ("gap", 0))):
-        ap.error("lives/life must be positive integers; gap must be a nonnegative integer")
     with args.log.open("x", encoding="utf-8") as log:
-        episode = Episode(cfg, args.seed, log)
+        try:
+            episode = Episode(cfg, args.seed, log)
+        except ValueError as error:
+            ap.error(str(error))
         print(json.dumps(episode.initial, ensure_ascii=False), flush=True)
         for line in sys.stdin:
             try:

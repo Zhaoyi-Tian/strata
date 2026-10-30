@@ -1,4 +1,4 @@
-"""文本环境：让 LLM（或任何读文字、写动作的 agent）来玩采办。规则和 play() 是同一份（Game.run），只是换成一问一答。
+"""文本环境：让 LLM（或任何读文字、写动作的 agent）来玩采办。只翻译动作与显示，规则由 Game 统一推进。
 
     from strata import Env, load
     env = Env(load(), seed=0)
@@ -53,12 +53,10 @@ class Env:
         self._build()
 
     def _build(self):
-        self.view = View(self.cfg["view"])
         self.game = Game(self.cfg, say=self._say, mechanisms=self.mechanisms)
+        self.view = View(self.cfg["view"], self.game.world)
         w = self.game.world
-        self._regions = [n for n in range(len(w.depth)) if w.depth[n] == 0]
         self._village_by_name = {self.name(v): v for v in w.villages}
-        self._steps, self.ask, self.done = None, None, False
         self._lines, self._events = [], []
 
     # ---- 给 agent 的 ----
@@ -69,20 +67,19 @@ class Env:
         g = self.cfg["game"]
         scoring = (f"一局 {g['lives']} 世，每世 {g['life']} 天，死后空转 {g['gap']} 天。"
                    "目标是让整局的每天成单率尽可能高；路上的天和不做的天都算没成单。")
-        return "\n\n".join([self.cfg["view"]["intro"], scoring, self.view.map(self.cfg["world"]["size"]), ACTIONS])
+        return "\n\n".join([self.cfg["view"]["intro"], scoring, self.view.map(), ACTIONS])
 
     def reset(self) -> str:
         """开局，返回第一天的观察。"""
-        if self._steps is not None:
+        if self.game.phase != "new":
             self._build()
-        self._steps = self.game.run()
         self._lines, self._events = [], []
-        self._send(None, first=True)
+        self.game.start()
         return self._obs()
 
     def step(self, action: str) -> tuple[str, bool, dict]:
         """回一个动作，返回 (观察, 是否整局结束, info)。"""
-        if self._steps is None:
+        if self.game.phase == "new":
             raise RuntimeError("先调 reset()")
         if self.done:
             raise RuntimeError("这一局已经结束了")
@@ -92,23 +89,26 @@ class Env:
             return f"{error}\n{PROMPT[kind]}", False, self._info(action, kind, error)
         self._lines, self._events = [], []
         for a in answers:                                       # 「找 X」在「今天怎么办」时 = 留下 + 找 X
-            self._send(a)
+            self.game.step(a)
         return self._obs(), self.done, self._info(action, kind)
 
     def legal_actions(self) -> list[str]:
         """此刻能回的所有动作。可以给 agent 看，也可以不给（看实验设置）。"""
+        if self.game.phase == "new":
+            raise RuntimeError("先调 reset()")
         if self.done:
             return []
-        if self.ask.kind == "death":
+        ask = self.ask
+        if ask.kind == "death":
             return ["继续"]
-        people = [f"找 {self.name(p)}" for p in self.ask.stalls] + ["不做"]
-        if self.ask.kind == "choose":
+        people = [f"找 {self.name(p)}" for p in ask.stalls] + ["不做"]
+        if ask.kind == "choose":
             return people
-        return people + [f"去 {self.name(v)}" for v in self.game.world.villages if v != self.ask.here] + ["留下"]
+        return people + [f"去 {self.name(v)}" for v in self.game.world.villages if v != ask.here] + ["留下"]
 
     def observation(self) -> str:
         """当前公开画面，供换窗后重绘；不含过往交易反馈，不推进时间，也不读取隐藏真值。"""
-        if self._steps is None:
+        if self.game.phase == "new":
             raise RuntimeError("先调 reset()")
         if self.done:
             return "这一局已经结束了。"
@@ -124,7 +124,15 @@ class Env:
     @property
     def life_ended(self) -> bool:
         """一世刚到头、下一世还没开始。runner 可以直接续局，或执行另行定义的记忆干预。"""
-        return not self.done and self.ask.kind == "death"
+        return self.game.phase == "death"
+
+    @property
+    def ask(self) -> Ask | None:
+        return self.game.ask
+
+    @property
+    def done(self) -> bool:
+        return self.game.done
 
     # ---- 给评测的 ----
 
@@ -140,11 +148,7 @@ class Env:
     def name(self, n) -> str | None:
         """节点 n（world 里的编号）在文字里叫什么。agent 还没见过的人没有名字，返回 None。"""
         w = self.game.world
-        if w.depth[n] == 0:
-            return self.view.name("region", self._regions.index(n))
-        if w.depth[n] == 1:
-            return self.view.name("village", w.villages.index(n))
-        return self.view.names["person"].get(n)
+        return self.view.names["person"].get(n) if w.depth[n] == 2 else self.view.name(n)
 
     def truth(self) -> dict:
         """此刻的真值。nodes 按编号，每个节点：名字、在哪一层、上一层是谁；每个槽位上
@@ -165,17 +169,8 @@ class Env:
     # ---- 内部 ----
 
     def _say(self, kind, **kw):
-        event = {"kind": kind, **kw}
-        if "village" in event:
-            event["village"] = self.game.world.villages[event["village"]]   # 统一成节点编号
-        self._events.append(event)
+        self._events.append({"kind": kind, **kw})
         self._lines.append(self.view.say(kind, **kw))
-
-    def _send(self, answer, first=False):
-        try:
-            self.ask = next(self._steps) if first else self._steps.send(answer)
-        except StopIteration:
-            self.ask, self.done = None, True
 
     def _obs(self) -> str:
         return "\n".join(self._lines + ([] if self.done else [PROMPT[self.ask.kind]]))
@@ -213,7 +208,7 @@ class Env:
         return {
             "life": g.life, "day": g.world.day, "day_in_life": len(g.log),
             "asked": asked,                                       # 这一步回答的是哪一问
-            "phase": "done" if self.done else self.ask.kind,      # 下一问
+            "phase": g.phase,                                    # 下一问
             "action": action, "parse_ok": error is None, "error": error,
             "life_ended": any(e["kind"] == "death" for e in self._events) if error is None else False,
             "events": [] if error else self._events,              # 这一步发生的事；村和人都是节点编号

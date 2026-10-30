@@ -2,7 +2,7 @@
 
 import argparse
 
-from strata import View, load, play
+from strata import Game, View, load, play
 
 from .agents import AGENTS, Inference
 
@@ -17,14 +17,16 @@ def main():
     cfg = load(a.config)
     g = cfg["game"]
 
-    view, printed = View(cfg["view"]), []
+    game = Game(cfg)
+    view, printed = View(cfg["view"], game.world), []
 
     def say(kind, **kw):
         if len(printed) < a.show:
             printed.append(view.say(kind, **kw))
 
-    print(cfg["view"]["intro"], view.map(cfg["world"]["size"]), "", sep="\n")
-    play(cfg, Inference, say)
+    print(cfg["view"]["intro"], view.map(), "", sep="\n")
+    game.say = say
+    game.play(Inference)
     print("\n".join(printed), "\n")
 
     print(f"{a.seeds} 个世界的平均。{g['lives']} 世，每世 {g['life']} 天，死后空转 {g['gap']} 天。"

@@ -40,11 +40,13 @@ class TestControl(unittest.TestCase):
             self.assertEqual(stay[2][day], travel[2][day])
 
     def test_names_are_independent_of_visit_order_without_naming_unseen_people(self):
-        a, b = View(CFG["view"]), View(CFG["view"])
-        forward = {n: a.name("person", n) for n in [2, 9, 4]}
-        reverse = {n: b.name("person", n) for n in [4, 9, 2]}
+        world = Env(CFG).world
+        a, b = View(CFG["view"], world), View(CFG["view"], world)
+        people = world.people[:3]
+        forward = {n: a.name(n) for n in people}
+        reverse = {n: b.name(n) for n in reversed(people)}
         self.assertEqual(forward, reverse)
-        self.assertNotIn(15, a.names["person"])
+        self.assertNotIn(world.people[-1], a.names["person"])
 
     def test_current_screen_is_public_and_does_not_advance_or_repeat_feedback(self):
         env = Env(CFG, seed=0)
