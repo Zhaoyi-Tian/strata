@@ -11,6 +11,7 @@ uv run python -m unittest discover -s tests
 ```
 
 LLM 对局适配与极简 dsh profile 在 [dsh/](dsh/)。安装、三种上下文模式、参数和日志说明见 [docs/dsh.md](docs/dsh.md)。
+模型输出预算、思考强度及各模式阈值统一在 [dsh/config.json](dsh/config.json) 调整。
 玩法状态、阶段转换和逐日结算由 `Game` 统一负责；文本接口与内核边界见 [docs/env.md](docs/env.md#内核与显示边界)。
 
 ## 世界的规则

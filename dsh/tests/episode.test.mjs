@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { LlmAdapter, ToolCallId } from '@deepseek-ai/dsh-llm'
@@ -15,7 +15,8 @@ class Scripted extends LlmAdapter {
   normal = 0
   constructor(ctx, mode, behavior) { super(); this.ctx = ctx; this.mode = mode; this.behavior = behavior }
   async resolveModel(provider, model) {
-    return { provider, id: model, name: model, context: { contextWindow: 1000000 } }
+    return { provider, id: model, name: model, context: { contextWindow: 1000000 },
+      reasoning: { efforts: [{ id: 'low', name: 'Low' }] } }
   }
   async *stream(request) {
     let block
@@ -23,6 +24,8 @@ class Scripted extends LlmAdapter {
     assert.equal(game.current.done, false, 'runner stops before any model call after game completion')
     assert.ok(!JSON.stringify(request).includes('source_layer'), 'evaluation truth never enters requests')
     assert.ok(!JSON.stringify(request).includes('daily-orders-v2'), 'evaluation metadata stays out of prompts')
+    assert.equal(request.maxTokens, 1536, 'normal calls and summaries share the configured output budget')
+    assert.equal(request.reasoningEffort, 'low', 'all modes and summaries share the configured reasoning effort')
     const names = request.tools.map(t => t.name)
     if (request.purpose === 'compaction') {
       assert.equal(this.mode, 'summary')
@@ -73,8 +76,9 @@ async function trial(mode, behavior, check, extra = {}) {
   const output = mkdtempSync(join(root, 'episode-'))
   try {
     const result = await runEpisode({
-      mode, provider: 'scripted', output, config: join(projectRoot, 'config/dsh-smoke.toml'),
-      memory: mode === 'notes' ? {} : { contextTokens: 6144, fallbackBufferTokens: 2048, reminderThresholdTokens: 1024 }, ...extra,
+      model: { provider: 'scripted', maxOutputTokens: 1536, reasoningEffort: 'low' },
+      output, config: join(projectRoot, 'config/dsh-smoke.toml'),
+      context: { mode, summary: { compactAtTokens: 6144 } }, ...extra,
     }, { setup(ctx) {
       ctx.inject(['llm'], child => child.llm.registerAdapter(['scripted'], new Scripted(child, mode, behavior)))
     } })
@@ -96,6 +100,10 @@ for (const mode of ['full', 'summary', 'notes']) {
       assert.equal(result.summaryCalls > 0, mode === 'summary')
       assert.equal(result.windows > 1, mode === 'notes')
       const env = rows(join(result.runDir, 'env.jsonl'))
+      const settings = JSON.parse(readFileSync(join(result.runDir, 'config.json'), 'utf8'))
+      assert.equal(settings.model.maxOutputTokens, 1536)
+      assert.equal(settings.context.summary.maxOutputTokens, 1536)
+      assert.equal(settings.context.mode, mode)
       assert.equal(env.filter(e => e.kind === 'start').length, 1, 'context switches never reset the Env')
       assert.equal(env.filter(e => e.kind === 'continue').length, 1)
       assert.ok(env.every(e => e.truth))
@@ -131,4 +139,26 @@ test('request limits terminate the run as incomplete', async () => {
     assert.equal(result.calls, 2)
     assert.match(result.error, /request limit/)
   }, { maxRequests: 2 })
+})
+
+test('full context limit ends an experiment as incomplete and keeps the original session', async () => {
+  const dir = mkdtempSync(join(root, 'config-'))
+  const runConfig = join(dir, 'experiment.json')
+  const settings = JSON.parse(readFileSync(join(projectRoot, 'dsh/config.json'), 'utf8'))
+  settings.model.id = 'controlled-model'
+  settings.context.full.stopAtTokens = 1000
+  writeFileSync(runConfig, JSON.stringify(settings))
+  try {
+    await trial('full', undefined, result => {
+      assert.equal(result.eval_completed, false)
+      assert.equal(result.score, null)
+      assert.match(result.error, /full: context reached stopAtTokens/)
+      assert.equal(result.model, 'controlled-model')
+      assert.equal(result.calls, 1)
+      assert.equal(result.summaryCalls, 0)
+      assert.equal(result.windows, 0)
+      const effective = JSON.parse(readFileSync(join(result.runDir, 'config.json'), 'utf8'))
+      assert.equal(effective.context.full.stopAtTokens, 1000)
+    }, { runConfig })
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })

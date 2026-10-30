@@ -1,15 +1,17 @@
 /** Boot the minimal profile and submit one complete game to the native dsh AgentLoop. */
 import { randomUUID } from 'node:crypto'
-import { appendFileSync, copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { appendFileSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { boot } from '@deepseek-ai/dsh-app-boot'
 import { BlockAssembler, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
+import { Config as ContextConfig, resolveConfig as resolveContextConfig } from 'dsh-strata'
 
 export const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const profilePath = fileURLToPath(new URL('./profile.yml', import.meta.url))
+const configPath = fileURLToPath(new URL('./config.json', import.meta.url))
 
 function positive(value, name, minimum = 1) {
   if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${name} must be an integer >= ${minimum}`)
@@ -18,20 +20,27 @@ function positive(value, name, minimum = 1) {
 
 /** Exposed for the scripted end-to-end test; setup may register a model adapter, never another loop. */
 export async function runEpisode(input = {}, { setup, signal } = {}) {
+  const settings = JSON.parse(readFileSync(input.runConfig ?? configPath, 'utf8'))
   const options = {
-    projectRoot, seed: 0, mode: 'notes', provider: 'deepseek-official', model: 'deepseek-flash',
-    maxTokens: 8192, maxRequests: 10000, memory: {}, output: resolve(projectRoot, 'results/dsh'), ...input,
+    projectRoot, seed: 0, output: resolve(projectRoot, 'results/dsh'), ...settings, ...input,
+    model: { ...settings.model, ...input.model },
+    context: resolveContextConfig(ContextConfig({ ...settings.context, ...input.context })),
   }
-  if (!['full', 'summary', 'notes'].includes(options.mode)) throw new Error('mode must be full, summary, or notes')
+  const { mode } = options.context
+  const { provider, id: model, maxOutputTokens, reasoningEffort } = options.model
   if (!Number.isSafeInteger(options.seed)) throw new Error('seed must be a safe integer')
-  positive(options.maxTokens, 'maxTokens')
+  positive(maxOutputTokens, 'model.maxOutputTokens')
+  if (!['off', 'low', 'high', 'max'].includes(reasoningEffort)) throw new Error('model.reasoningEffort must be off, low, high, or max')
   positive(options.maxRequests, 'maxRequests')
+  // Persist the effective summary budget instead of an unresolved inheritance marker.
+  options.context.summary.maxOutputTokens ??= maxOutputTokens
   if (options.config) options.config = resolve(options.config)
   const stamp = new Date().toISOString().replaceAll(':', '-')
-  options.runDir = join(resolve(options.output), `${options.mode}-seed${options.seed}-${stamp}-${randomUUID().slice(0, 8)}`)
+  options.runDir = join(resolve(options.output), `${mode}-seed${options.seed}-${stamp}-${randomUUID().slice(0, 8)}`)
   mkdirSync(options.runDir, { recursive: true })
   const json = (file, value) => writeFileSync(join(options.runDir, file), JSON.stringify(value, null, 2) + '\n')
   json('run.json', { ...options, protocol: 'daily-orders-v2' })
+  json('config.json', { model: options.model, context: options.context, maxRequests: options.maxRequests })
   copyFileSync(profilePath, join(options.runDir, 'profile.yml'))
   writeFileSync(join(options.runDir, 'api.jsonl'), '', { flag: 'wx' })
   const calls = []
@@ -55,7 +64,7 @@ export async function runEpisode(input = {}, { setup, signal } = {}) {
       return Promise.resolve({ kind: 'reject' })
     }, { prepend: true })
     agent = await ctx.get('agentLoop').create(SessionId(`strata-${randomUUID()}`), {
-      provider: options.provider, model: options.model, maxTokens: options.maxTokens,
+      provider, model, maxTokens: maxOutputTokens, reasoningEffort,
     }, { cwd: options.projectRoot })
     signal?.addEventListener('abort', cancel, { once: true })
     signal?.throwIfAborted()
@@ -128,7 +137,7 @@ function summarizeRun(options, { game, agent, calls, error, reason, stoppedAtGam
   return {
     eval_completed: completed, termination: completed ? 'env_done' : reason?.kind ?? 'startup_error',
     error: error ?? null, runDir: options.runDir,
-    mode: options.mode, seed: options.seed, provider: options.provider, model: options.model,
+    mode: options.context.mode, seed: options.seed, provider: options.model.provider, model: options.model.id,
     sessionId: agent?.session.id ?? null, daysPlayed: current?.days_played ?? 0,
     actions: game?.actions ?? 0, invalidActions: game?.invalidActions ?? 0,
     calls: calls.length, summaryCalls: calls.filter(call => call.purpose === 'compaction').length,
@@ -140,26 +149,21 @@ function summarizeRun(options, { game, agent, calls, error, reason, stoppedAtGam
 }
 
 async function main() {
-  const names = ['mode', 'seed', 'config', 'model', 'output', 'env-file', 'context-tokens', 'summary-tokens',
-    'max-tokens', 'max-requests', 'fallback-buffer', 'reminder-tokens']
+  const names = ['mode', 'seed', 'config', 'run-config', 'output', 'env-file']
   const { values } = parseArgs({ options: { ...Object.fromEntries(names.map(name => [name, { type: 'string' }])), help: { type: 'boolean' } } })
   if (values.help) {
-    console.log('node dsh/run.mjs --mode notes --seed 0 [--config config/dsh-smoke.toml] [--output DIR] [--env-file FILE]\n'
-      + 'Model: --model ID --max-tokens N --max-requests N\n'
-      + 'Memory: --context-tokens N --summary-tokens N --fallback-buffer N --reminder-tokens N\n'
-      + 'See docs/dsh.md for the minimal profile and full configuration.')
+    console.log('node dsh/run.mjs [--run-config dsh/config.json] [--mode notes] [--seed 0]\n'
+      + '  [--config config/dsh-smoke.toml] [--output DIR] [--env-file FILE]\n'
+      + 'Model and context controls live in dsh/config.json; --mode overrides context.mode.\n'
+      + 'See docs/dsh.md for field meanings and experiment configuration.')
     return
   }
   if (values['env-file']) process.loadEnvFile(resolve(values['env-file']))
-  const options = { memory: {} }
-  for (const key of ['mode', 'model', 'config', 'output']) if (values[key] !== undefined) options[key] = values[key]
-  for (const [flag, key] of [['seed', 'seed'], ['max-tokens', 'maxTokens'], ['max-requests', 'maxRequests']]) {
-    if (values[flag] !== undefined) options[key] = Number(values[flag])
-  }
-  for (const [flag, key] of [['context-tokens', 'contextTokens'], ['fallback-buffer', 'fallbackBufferTokens'], ['reminder-tokens', 'reminderThresholdTokens']]) {
-    if (values[flag] !== undefined) options.memory[key] = Number(values[flag])
-  }
-  if (values['summary-tokens'] !== undefined) options.memory.summary = { maxTokens: Number(values['summary-tokens']) }
+  const options = {}
+  for (const key of ['config', 'output']) if (values[key] !== undefined) options[key] = values[key]
+  if (values['run-config'] !== undefined) options.runConfig = resolve(values['run-config'])
+  if (values.seed !== undefined) options.seed = Number(values.seed)
+  if (values.mode !== undefined) options.context = { mode: values.mode }
   const controller = new AbortController()
   const abort = () => controller.abort(new Error('Run interrupted'))
   process.on('SIGINT', abort).on('SIGTERM', abort)

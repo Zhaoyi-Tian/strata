@@ -3,11 +3,11 @@
   name: '@deepseek-ai/dsh-llm'
 - id: llm-deepseek
   name: '@deepseek-ai/dsh-llm-deepseek-api-key'
-  disabled: !!js ctx.strataOptions.provider !== 'deepseek-official'
+  disabled: !!js ctx.strataOptions.model.provider !== 'deepseek-official'
   config:
     apiKeyEnv: DEEPSEEK_API_KEY
-    thinking: enabled
-    maxTokens: !!js ctx.strataOptions.maxTokens
+    reasoningEffort: !!js ctx.strataOptions.model.reasoningEffort
+    maxTokens: !!js ctx.strataOptions.model.maxOutputTokens
 - id: session
   name: '@deepseek-ai/dsh-session'
 - id: session-projection
@@ -44,13 +44,7 @@
   name: '@deepseek-ai/dsh-session-checkpoint-policy'
 - id: dsh-strata
   name: dsh-strata
-  config:
-    mode: !!js ctx.strataOptions.mode
-    contextTokens: !!js ctx.strataOptions.memory.contextTokens
-    fallbackBufferTokens: !!js ctx.strataOptions.memory.fallbackBufferTokens ?? 16384
-    reminderThresholdTokens: !!js ctx.strataOptions.memory.reminderThresholdTokens ?? 6144
-    summary:
-      maxTokens: !!js ctx.strataOptions.memory.summary?.maxTokens ?? 4096
+  config: !!js ctx.strataOptions.context
 - id: strata-game
   name: ./adapter.mjs
   config: !!js ctx.strataOptions

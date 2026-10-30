@@ -1,0 +1,24 @@
+{
+  "model": {
+    "provider": "deepseek-official",
+    "id": "deepseek-flash",
+    "reasoningEffort": "high",
+    "maxOutputTokens": 8192
+  },
+  "context": {
+    "mode": "notes",
+    "notes": {
+      "remindAtTokens": 59392,
+      "checkpointAtTokens": 65536,
+      "forceSwitchAtTokens": 81920
+    },
+    "summary": {
+      "compactAtTokens": 81920,
+      "maxOutputTokens": null
+    },
+    "full": {
+      "stopAtTokens": 81920
+    }
+  },
+  "maxRequests": 10000
+}

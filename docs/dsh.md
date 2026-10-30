@@ -51,43 +51,89 @@ node dsh/run.mjs \
 切换上下文模式只改 `--mode`：`full`、`summary`、`notes`。每次都新建一局和一个 Session；不能把同一局中途改成另一种模式作为对照。
 不需要先启动交互式 dsh，也不需要安装到 `$DSH_HOME`。
 
-为了在短局里看到压缩或换窗，可以调小窗口，并相应缩小 notes 的缓冲：
+## 统一实验配置
+
+常调项集中在 [dsh/config.json](../dsh/config.json)。`dsh/profile.yml` 只负责挂载插件，不再重复填写阈值或输出预算。
+默认配置如下，各模式的上下文阈值可以独立调整：
+
+```json
+{
+  "model": {
+    "provider": "deepseek-official",
+    "id": "deepseek-flash",
+    "reasoningEffort": "high",
+    "maxOutputTokens": 8192
+  },
+  "context": {
+    "mode": "notes",
+    "notes": {
+      "remindAtTokens": 59392,
+      "checkpointAtTokens": 65536,
+      "forceSwitchAtTokens": 81920
+    },
+    "summary": {
+      "compactAtTokens": 81920,
+      "maxOutputTokens": null
+    },
+    "full": {
+      "stopAtTokens": 81920
+    }
+  },
+  "maxRequests": 10000
+}
+```
+
+| 字段 | 语义 |
+| --- | --- |
+| `model.id` / `provider` | 模型 ID 与 dsh provider，三种模式共用 |
+| `model.reasoningEffort` | 思考强度：`off / low / high / max`，也用于摘要调用 |
+| `model.maxOutputTokens` | 每次模型调用的总输出预算，包含思考、回答及工具调用；三种模式共用 |
+| `context.mode` | `notes / summary / full`，每次实验选择一种 |
+| `context.notes.remindAtTokens` | 当前上下文用到多少 token 时，提醒准备记笔记和换窗 |
+| `context.notes.checkpointAtTokens` | 用到多少 token 时，要求立即保存检查点并主动换窗 |
+| `context.notes.forceSwitchAtTokens` | 用到多少 token 时强制换窗；`null` 使用模型可用容量 |
+| `context.summary.compactAtTokens` | 用到多少 token 时压缩全部当前历史；`null` 使用模型可用容量 |
+| `context.summary.maxOutputTokens` | 摘要调用的输出预算；默认 `null`，继承 `model.maxOutputTokens`，需要时单独覆盖 |
+| `context.full.stopAtTokens` | 用到多少 token 时结束实验，记为上下文超限、`score: null`；`null` 时不设插件阈值 |
+| `maxRequests` | 整局模型请求次数上限，包含摘要调用；达到上限记为未完成 |
+
+`AtTokens` 都是**当前上下文已用量的绝对阈值**。不是剩余量，也不是整局累计 token 消耗。
+按服务商 usage 加新增内容估算，在下一次正常请求前检查已有上下文，再追加本步新输入；不会把请求裁成某个精确长度。
+notes 要满足 `remindAtTokens <= checkpointAtTokens`；配置有限的强制切窗阈值时，还要满足 `checkpointAtTokens < forceSwitchAtTokens`。
+例如默认配置在 59392 提醒、65536 要求保存检查点、81920 强制切窗，中间留有写笔记和主动换窗的空间。
+`get_context_remaining` 返回距强制切窗的剩余 token，包含这段空间。
+模型的物理窗口扣除输出预留后，可能让 notes 或 summary 更早处理上下文；改小模型容量时，也应相应调小提醒和 checkpoint 阈值。
+
+当前 DeepSeek Messages API 的 `max_tokens` 包含思考；`thinking.budget_tokens` 被忽略，不能用它单独控制思考 token 数。
+因此这里使用总输出预算和思考强度两个准确的控制项。[DeepSeek 参数说明](https://api-docs.deepseek.com/api/create-message/)
+
+换一组实验参数时，复制这份配置，修改后用 `--run-config` 指定：
 
 ```sh
 node dsh/run.mjs \
+  --run-config /Users/tzy/WorkSpace/Temp/strata-dsh/experiment.json \
   --mode summary --seed 0 --config config/dsh-smoke.toml \
-  --context-tokens 6144 --summary-tokens 2048 \
-  --env-file ../.env --output /Users/tzy/WorkSpace/Temp/strata-dsh/runs
-
-node dsh/run.mjs \
-  --mode notes --seed 0 --config config/dsh-smoke.toml \
-  --context-tokens 8192 --fallback-buffer 2048 --reminder-tokens 1024 \
   --env-file ../.env --output /Users/tzy/WorkSpace/Temp/strata-dsh/runs
 ```
 
-是否实际触发，以结果里的 `summaryCalls` 和 `windows` 为准。短局和小窗口的分数不当成正式 benchmark 结果。
+这里 `experiment.json` 是你从 `dsh/config.json` 复制并编辑的完整配置文件；`--mode` 可临时覆盖其中的 `context.mode`。
+短局检查可以把 `summary.compactAtTokens` 调成 6144，或把 notes 三个阈值依次设成 5120、6144、8192。
+是否实际触发以 `summaryCalls` 和 `windows` 为准，短局和小窗口分数不当成正式 benchmark 结果。
 
-## 配置
+启动参数只保留运行入口信息：
 
-`node dsh/run.mjs --help` 查看入口与可用参数。
+| 参数 | 默认 / 含义 |
+| --- | --- |
+| `--run-config` | 仓库中的 `dsh/config.json`；统一模型与上下文配置 |
+| `--mode` | 不传则使用配置文件中的 `context.mode` |
+| `--seed` | `0`；世界、按日订单和出生地点的共同种子 |
+| `--config` | 游戏默认配置；Strata TOML，独立于模型配置 |
+| `--env-file` | 默认不加载；显式读取 API key 的文件 |
+| `--output` | 仓库中的 `results/dsh/`；本机建议显式指定 Temp 路径 |
 
-| 参数 | 默认 | 用途 |
-| --- | --- | --- |
-| `--mode` | `notes` | `full / summary / notes` |
-| `--seed` | `0` | 世界、按日订单和出生地点的共同种子 |
-| `--config` | 游戏默认配置 | Strata TOML，路径相对调用目录；只写要覆盖的项 |
-| `--model` | `deepseek-flash` | 交给固定版本的 dsh DeepSeek adapter 解析的模型 ID |
-| `--max-tokens` | `8192` | 每次正常模型请求的输出预算，包含服务商计入输出的思考 |
-| `--max-requests` | `10000` | 整局模型请求上限，包含摘要；达到上限记为未完成 |
-| `--context-tokens` | `81920` | notes 的硬上限、summary 的触发阈值；full 忽略 |
-| `--summary-tokens` | `4096` | 摘要输出预算 |
-| `--fallback-buffer` | `16384` | notes 保存检查点的缓冲，必须小于可用硬上限 |
-| `--reminder-tokens` | `6144` | notes 提醒阈值 |
-| `--env-file` | 不加载文件 | 显式读取 API key 的文件 |
-| `--output` | `strata/results/dsh/` | 输出根目录；本机建议显式指定上面的 Temp 路径 |
-
-自定义摘要或 notes 提示词，直接在 `dsh/profile.yml` 的 `dsh-strata.config` 下增加插件支持的 `prompts` 字段。
-不要改 Python 环境来实现记忆算法。插件的完整参数见相邻仓库的 README。
+`--run-config`、`--config`、`--env-file` 和 `--output` 的显式路径相对调用目录。
+旧的 token、模型和请求上限 CLI 参数已移除，统一修改配置文件，`node dsh/run.mjs --help` 可查看入口。
+自定义提示词也放在配置文件的 `context.prompts` 下；完整插件字段见相邻 `dsh-strata` 仓库的 README。
 
 ## 极简 profile
 
@@ -131,6 +177,7 @@ node dsh/run.mjs \
 
 ```text
 run.json        运行参数与协议版本 daily-orders-v2
+config.json     最终生效的模型、上下文配置和请求上限（摘要继承值已展开）
 profile.yml     本次使用的 profile 原文
 api.jsonl       每次模型请求的完整消息/工具，以及返回流、思考、usage 和耗时
 env.jsonl       每次游戏动作、反馈、内部事件、动作后的 truth；仅供评测
@@ -141,7 +188,7 @@ summary.json    完成状态、成绩、调用次数、usage、错误和 Session
 只有环境整局结束，且 runner 在下一步边界正常停止 AgentLoop，`eval_completed` 才为真并输出 `score`，
 `termination` 为 `env_done`。这里使用 dsh 的 pre-step 拒绝机制，原生 `turn/end` 的 reason 是 `blocked`；
 只有 runner 自己确认的环境终止才算完成，其他 blocked 都不能算完成。结束后不再为最终答复、笔记或摘要追加模型请求。
-提前给最终回答、API 错误、摘要失败、请求上限、取消等都输出 `score: null`，进程非零退出。
+提前给最终回答、full 上下文超限、API 错误、摘要失败、请求上限、取消等都输出 `score: null`，进程非零退出。
 非法动作次数单独记录；环境按原规则不扣游戏日。完整游玩后成单率为零是正常零分，与未完成不同。
 
 `score` 包含整局每天成单率、各世成单率和第二世起重生头 20 天的成单率。
@@ -168,7 +215,7 @@ pnpm test
 Python 测试检查路线对照、生命周期日期、名字、公开快照，以及环境与规则基线的一致性。
 内核还独立检查逐日结算、最后一天旅行和死亡边界的日期与计分，不只比较两种接口是否一致。
 Node 测试使用脚本模型，经过真实 profile、常驻 Python 环境和原生 AgentLoop，验证三种模式、
-跨窗恢复、连续摘要、思考日志、真值隔离，以及提前结束、API 错误和请求上限的未完成判定。
+跨窗恢复、连续摘要、思考日志、真值隔离，统一模型输出与思考配置，以及提前结束、full 超限、API 错误和请求上限的未完成判定。
 
 运行依赖安装在本地 `dsh/node_modules/`；需要重新安装时可删除它，保留源码和 lockfile。pnpm 的工具缓存由 pnpm 管理。
 对局日志保留在指定的输出目录，测试临时目录自动清理。
