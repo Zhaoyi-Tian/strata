@@ -1,0 +1,16 @@
+# 加重记忆分量的世界：每村 8 人、两个隐藏特质（守不守信、货真不真）。
+# 由来：11.03 评测发现默认世界里分数主要丢在「去哪」，记忆只影响一小部分。规则基线（4 世 × 40 天，10 个 seed）：
+#   默认      随便找 40%  只信最新 53%  分层推断 65%  全知 84%   推断−随便 +25  全知−推断 +20
+#   本配置    随便找 22%  只信最新 36%  分层推断 50%  全知 80%   推断−随便 +27  全知−推断 +31
+# 用法：uv run stratabench --config config/more-memory.toml
+#       node dsh/run.mjs --config config/more-memory.toml ...
+
+worldview = "config/worldview-2hidden.toml"
+
+[world]
+size = [3, 3, 8]        # 地区数、每个地区几个村、每个村几个人
+
+[game]                  # 和 11.03 评测一致：4 世 × 40 天
+lives = 4
+life = 40
+gap = 300
