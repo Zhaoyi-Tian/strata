@@ -24,6 +24,14 @@ class Agent:
     def observe(self, day, p, seen: dict):
         pass
 
+    def act(self, ask):
+        """回答 Game 的一问：去哪、找谁；一世结束那一问不用回。"""
+        if ask.kind == "go":
+            return self.go(ask.day, ask.here, ask.want, ask.stalls)
+        if ask.kind == "choose":
+            return self.choose(ask.day, ask.want, ask.stalls)
+        return None
+
     def fit(self, day, p, want, slots, stalls):
         """p 在这几个槽位上都对上的把握；眼前摊子上看得见的就不用猜。"""
         out = 1.0

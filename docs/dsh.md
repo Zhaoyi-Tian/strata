@@ -51,7 +51,7 @@ node dsh/run.mjs \
 Part A 使用 `--config config/part-a.toml`，五项机制可独立开关，详见 [Part A](part-a.md)。
 `strata_step.action` 仍为一个字符串；启用前瞻任务时新增 `传话 <人名> <口信>`。
 新机制的正确对象、消息真假和委托状态只写评测日志，不进入模型工具结果或动态画面。
-`run.json` 记录实际机制配置及协议：全关为 `daily-orders-v2`，启用机制为 `part-a-v1`。
+`run.json` 记录实际机制配置及协议：全关为 `daily-orders-v2`，启用机制为 `part-a-v2`（v1 见 tag `part-a-v1`）。
 最终 `score.mechanisms.prospective` 单列传话成绩，采购分数口径保持不变。
 
 切换上下文模式只改 `--mode`：`full`、`summary`、`notes`。每次都新建一局和一个 Session；不能把同一局中途改成另一种模式作为对照。

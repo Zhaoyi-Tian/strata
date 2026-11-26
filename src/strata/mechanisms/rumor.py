@@ -18,13 +18,17 @@ class Rumor(Mechanism):
         self.all_truthful, self.credibility_slot = all_truthful, credibility_slot
 
     def reset(self, game):
-        if not self.all_truthful and self.credibility_slot not in game.world.slots:
-            raise ValueError("rumor.credibility_slot must name an existing slot")
         self.history = deque(maxlen=self.max_delay + 1)
         self.last, self.count = None, 0
-        self.tick(game)
+        self.remember(game)
 
-    def tick(self, game):
+    def on(self, game, kind, **kw):
+        if kind == "tick":
+            self.remember(game)
+        elif kind == "news":
+            self.news(game)
+
+    def remember(self, game):
         w = game.world
         self.history.append((w.day, {
             (p, s): {"value": w.value(p, s), "source": w.source(p, s), "since": w.since[s][p]}
@@ -53,9 +57,8 @@ class Rumor(Mechanism):
                      "fabricated": claimed != fact["value"], "current_value": w.value(person, slot),
                      "stale": fact["value"] != w.value(person, slot)}
         game.record("rumor", **self.last)
-        game.say("rumor", speaker=speaker, person=person, village=w.parent[person],
-                 statement_day=day, slot=slot, value=claimed)
-        game.useful_news += 1
+        game.emit("rumor", speaker=speaker, person=person, village=w.parent[person],
+                  statement_day=day, slot=slot, value=claimed)
 
     def snapshot(self):
         return {"count": self.count, "last": deepcopy(self.last)}

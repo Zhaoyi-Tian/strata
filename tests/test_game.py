@@ -87,13 +87,13 @@ class TestGame(unittest.TestCase):
 
     def test_trade_success_failure_and_wrong_goods(self):
         class Order(Mechanism):
-            def order(self, game, want):
+            def order(self, game):
                 person = game.world.residents[game.here][0]
-                want = {s: game.world.value(person, s) for s in game.world.slots}
+                want = game.want
+                want.update({s: game.world.value(person, s) for s in game.world.slots})
                 if outcome != "done":
                     slot = game.visible[0] if outcome == "skip" else game.hidden[0]
                     want[slot] = next(v for v in game.world.slots[slot] if v != want[slot])
-                return want
 
         for outcome in ("done", "fail", "skip"):
             with self.subTest(outcome=outcome):

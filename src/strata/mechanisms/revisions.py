@@ -1,4 +1,5 @@
-"""一次抵达、一次购买前检查；每个时点只抽一次，传话和重绘不会重抽。"""
+"""东家改主意：一次抵达、一次购买前检查；每个时点只抽一次，传话和重绘不会重抽。
+指称订单改口时就不再点名（那个人只卖原来那样货），改成找任一符合要求的人。"""
 
 from . import Mechanism, integer, probability
 
@@ -13,41 +14,40 @@ class Revisions(Mechanism):
     def reset(self, game):
         self.checked, self.count = set(), 0
 
-    def order(self, game, want):
+    def order(self, game):
         self.checked = set()
-        return want
+
+    def on(self, game, kind, **kw):
+        if kind == "arrive":
+            self.revise(game, "arrive")
+
+    def before_choice(self, game, person):
+        return self.revise(game, "before_choice")
 
     def revise(self, game, stage):
         if stage in self.checked:
             return False
         self.checked.add(stage)
-        state = game.order_state
-        if state["version"] - 1 >= self.max_revisions:
+        order = game.order
+        if order.version - 1 >= self.max_revisions:
             return False
-        rng = self.rng(game, state["issued_day"], stage)
-        people = [state["target"]] if state["target"] is not None else list(game.stalls)
-        alternatives = [(s, v) for s in game.visible for v in game.world.slots[s] if v != game.want[s]
-                        and any(game.world.value(p, s) == v for p in people)]
+        rng = self.rng(game, order.issued_day, stage)
+        alternatives = [(s, v) for s in game.visible for v in game.world.slots[s] if v != order.want[s]
+                        and any(game.world.value(p, s) == v for p in game.stalls)]
         if rng.random() >= self.rate or not alternatives:
             return False
         slot, value = rng.choice(alternatives)
-        before = dict(game.want)
-        game.want[slot] = value
-        state["version"] += 1
-        state["versions"].append({"version": state["version"], "day": game.world.day, "want": dict(game.want)})
+        before, reference = dict(order.want), order.reference
+        order.want[slot] = value
+        order.target = order.reference = None
+        order.version += 1
+        order.versions.append({"version": order.version, "day": game.world.day, "want": dict(order.want)})
         self.count += 1
-        game.record("revision", order_id=state["id"], version=state["version"], before=before,
-                    after=dict(game.want), target=state["target"], stage=stage)
-        game.say("revision", slot=slot, old=before[slot], new=game.want[slot],
-                 reference=state["reference"], want=dict(game.want))
-        game.decision_interrupted = True
+        game.record("revision", order_id=order.id, version=order.version, before=before,
+                    after=dict(order.want), dropped_reference=reference, stage=stage)
+        game.emit("revision_unref" if reference else "revision_open", slot=slot, old=before[slot], new=value,
+                  reference=reference, want=dict(order.want))
         return True
-
-    def arrive(self, game):
-        self.revise(game, "arrive")
-
-    def before_choice(self, game, person):
-        return self.revise(game, "before_choice")
 
     def snapshot(self):
         return {"count": self.count}

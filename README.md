@@ -15,7 +15,7 @@ LLM 对局适配与极简 dsh profile 在 [dsh/](dsh/)。安装、三种上下�
 玩法状态、阶段转换和逐日结算由 `Game` 统一负责；文本接口与内核边界见 [docs/env.md](docs/env.md#内核与显示边界)。
 
 Part A 已加入五项独立开关：传闻、指称订单、改主意、前瞻任务、干扰信息。默认全部关闭；
-`uv run python -m strata.env --config config/part-a.toml` 开启全部，`uv run python -m strata.demo` 查看受控故事演示。
+`uv run python -m strata.env --config config/part-a.toml` 开启全部。
 开关、规则、传话计分和日志见 [docs/part-a.md](docs/part-a.md)。
 Part A 的 [首轮正式运行结果](docs/experiments/part-a-2026-11-26.md)记录十世采购、跨世传话、机制分项及可离线重算的完整动作轨迹。
 

@@ -1,22 +1,18 @@
 # Part A：五项可独立开关的机制
 
-本版把传闻、指称订单、改主意、前瞻任务和干扰信息接入同一套 `Game` / `Env`。世界的继承、变化概率和随机流不变。正式机制协议为 `part-a-v1`；全部关闭仍使用 `daily-orders-v2`。
+本版把传闻、指称订单、改主意、前瞻任务和干扰信息接入同一套 `Game` / `Env`。世界的继承、变化概率和随机流不变。当前机制协议为 `part-a-v2`；全部关闭仍使用 `daily-orders-v2`。
 
-[首轮正式运行结果](experiments/part-a-2026-11-26.md)报告 full 模式下的连续十世表现，附配置、逐世成绩、机制分项、完整动作轨迹与离线重算脚本。
+`part-a-v2` 相对 v1 改了两处：指称订单被改口时不再点名（v1 里那个人只卖原来那样货，点名订单永远改不了口）；干扰信息按当天全部有用消息（指称订单、传闻、委托）配比。v1 的代码固定在 tag `part-a-v1`，首轮正式运行要在那个 tag 上复算。
 
-## 先看故事，再自己玩
+[首轮正式运行结果](experiments/part-a-2026-11-26.md)（`part-a-v1`）报告 full 模式下的连续十世表现，附配置、逐世成绩、机制分项、完整动作轨迹与离线重算脚本。
 
-```powershell
-# 本仓库已建立虚拟环境时
-.\.venv\Scripts\python.exe -m strata.demo
-.\.venv\Scripts\python.exe -m strata.env --config config/part-a.toml --seed 0
+## 自己玩
+
+```sh
+uv run python -m strata.env --config config/part-a.toml --seed 0
 ```
 
-使用 uv 的环境对应 `uv run python -m strata.demo` 和 `uv run python -m strata.env --config config/part-a.toml --seed 0`。`strata --config config/part-a.toml` 也会进入同一个文本交互入口。
-
-运行 `python -m strata.demo` 可生成完整演示文字。演示固定初始货物、守信值，使用一个地区的三个村、六天短局，并提高事件触发率。演示控制器能读取真值来安排行动，**不是被测 agent，其成绩不能作为 benchmark 结果**。没有单独的演示结算引擎。
-
-当前演示里：第一天在柳溪接到采购、传闻和捎话委托，东家随后改要盐；第二天去石门主动给茶客传话；第六天的订单通过第二天的买卖指向屠户。所有人名、货物、动作和结果均来自实际对局。
+`uv run strata --config config/part-a.toml` 也会进入同一个文本交互入口。
 
 文字初版统一在 `config/worldview.toml`：开场为 `part_a_intro`，事件在 `[lines]`，口信、闲聊和机制规则在 `[mechanism_text]`。公开画面不显示真假标签、指称答案和待办清单。
 
@@ -85,16 +81,15 @@ credibility_slot = "守不守信"
 
 ## 接口与证据
 
-`Game` 负责全部机制状态和日期，`View` 仅把公开事件渲染成文字。保留 `order(game, want)` / `news(game)`，新增生命周期挂钩见 `src/strata/mechanisms/__init__.py`。结构化传话动作是 `DeliverMessage(person, message)`，经 `Game.step()` 执行。`Ask.reference` 只有公开指称表达，正确对象不放进公开快照。
+`Game` 负责全部机制状态和日期，`View` 仅把公开事件渲染成文字。机制只有五个时刻：`reset`、`order`（可改 `game.order`）、`on(game, kind, **kw)`（Game 发生的每件事，包括 tick、news、arrive 等只发给机制的时刻）、`before_choice` 和 `snapshot`，说明见 `src/strata/mechanisms/__init__.py`。结构化传话动作是 `DeliverMessage(person, message)`，经 `Game.step()` 执行。`Ask.reference` 只有公开指称表达，正确对象不放进公开快照；`Ask.version` 是订单改过几次口。
 
-`game.record()` 写入追加式私有审计；`game.say()` 仅传递可展示内容。`info.mechanism_events` 是本次动作新增的审计。`env.truth().mechanisms` 包含订单身份、版本、指称答案及各机制状态。不要将 `info` 或 `truth` 发给被测模型。
+机制说话用 `game.emit()`，别的机制也听得到，公开的再由 `View` 写成文字；`game.record()` 写入追加式私有审计。`info.events` 是本次动作的公开事件（含 `done` / `fail` / `wrong_person` 等结算），`info.mechanism_events` 是本次动作新增的私有审计。`env.truth().mechanisms` 包含当前订单（身份、版本、指称答案）及各机制状态。不要将 `info` 或 `truth` 发给被测模型。
 
 | 事件 | 主要归因证据 |
 |---|---|
 | `rumor` | 说话者、对象、传播日、所述日期、历史值、声称值、当前值、继承来源、是否编造/过期 |
 | `reference_order` | 公开表达、正确对象、跳数、前置订单身份 |
-| `order_issued` / `revision` | 订单身份、版本、修改前后要求、指定对象 |
-| `choice` / `settlement` | 实际选择、有效要求、该人真实特质、成败及是否选错指定对象 |
+| `revision` | 订单身份、版本、修改前后要求、被放弃的指称 |
 | `task_issued` / `task_opportunity` / `task_missed` / `message_delivered` | 委托内容、机会日期、关闭状态、尝试结果 |
 | `distraction` | 插入的无关消息，可用于开关对照 |
 
@@ -114,4 +109,4 @@ Python 适配器沿用原有 JSONL 动作协议，接受传话。`env.jsonl` 开
 .\.venv\Scripts\python.exe -m unittest discover -s tests
 ```
 
-测试包含 32 种组合、独立触发、全关基线指纹、重放与重置、历史真值、两跳指称、连续修订、跨区及死亡边界、传话机会与重复提交、dsh Python 边界和真实故事演示。Node 的完整 AgentLoop 测试另需 Node 26+、pnpm 及相邻 `dsh-strata` 依赖，见 [dsh.md](dsh.md)。
+测试包含 32 种组合、独立触发、全关基线指纹、重放与重置、历史真值、两跳指称、连续修订、跨区及死亡边界、传话机会与重复提交、dsh Python 边界。Node 的完整 AgentLoop 测试另需 Node 26+、pnpm 及相邻 `dsh-strata` 依赖，见 [dsh.md](dsh.md)。

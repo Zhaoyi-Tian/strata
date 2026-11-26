@@ -2,18 +2,21 @@
 
 start() 开局，step(answer) 回答当前的 Ask；ask / done 从内核状态导出。
 旅行、交易和不做都经过同一个逐日结算入口，寿命用完即结束这一世。
-World 只管世界变化，接口只翻译动作，View 只把节点和事件写成文字。
+发生的每件事都经 emit：机制全都听得到，公开的那些再交给 say 写成文字。
 世界、按日订单和每世出生地点使用独立的随机数，走法不改变外部条件。
 """
 
 import random
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Literal
 
 from .mechanisms import configured, validate_view
 from .mechanisms.prospective import normalize
 from .world import World
+
+# 只发给机制、不写成文字的时刻
+LIFECYCLE = {"tick", "life_start", "life_end", "finish", "news", "arrive", "depart", "settled"}
 
 
 @dataclass(frozen=True)
@@ -29,6 +32,7 @@ class Ask:
     go：去哪，回一个村（回 here 就是留下）。
     choose：找谁，回 stalls 里的一个人或 None（不做）。
     death：下一世开始之前，回什么都行；可在此做独立定义的记忆干预。
+    version 是订单改过几次口（从 1 起），reference 是公开的指称表达，不含正确对象。
     """
 
     kind: Literal["go", "choose", "death"]
@@ -36,7 +40,22 @@ class Ask:
     here: int
     want: dict = field(default_factory=dict)
     stalls: dict = field(default_factory=dict)
-    reference: dict | None = None  # 公开的指称表达，不含正确对象
+    reference: dict | None = None
+    version: int = 1
+
+
+@dataclass
+class Order:
+    """今天这单。target / reference / hops 只有指称订单才有；versions 记下每次改口后的要求。"""
+
+    id: str
+    issued_day: int
+    want: dict
+    version: int = 1
+    target: int | None = None
+    reference: dict | None = None
+    hops: int = 0
+    versions: list = field(default_factory=list)
 
 
 class Game:
@@ -55,35 +74,40 @@ class Game:
         self.mechanisms = configured(cfg) if mechanisms is None else list(mechanisms)
         validate_view(cfg, self.mechanisms)
         self.phase: Literal["new", "go", "choose", "death", "done"] = "new"
-        self.life, self.here = 0, None
-        self.want, self.stalls = {}, {}
+        self.life, self.here, self.order, self.stalls = 0, None, None, {}
         self.log: list[bool] = []                               # 当前世已结算的每天；结束时加入 lives
         self.lives: list[list[bool]] = []                       # 已结束的每一世
-        self.order_state, self.trades, self.audit = {}, [], []
-        self.decision_interrupted, self.useful_news = False, 0
+        self.trades, self.audit = [], []
+
+    # ---- 机制用的 ----
+
+    @property
+    def want(self) -> dict:
+        return self.order.want if self.order else {}
 
     def mechanism(self, name):
         return next((m for m in self.mechanisms if m.name == name), None)
 
-    def notify(self, hook, *args):
-        for mechanism in self.mechanisms:
-            getattr(mechanism, hook)(self, *args)
+    def emit(self, kind, **kw):
+        """一件事发生了：先让机制听到，公开的再写成文字。"""
+        for m in self.mechanisms:
+            m.on(self, kind, **kw)
+        if kind not in LIFECYCLE:
+            self.say(kind, **kw)
 
     def record(self, kind, **fields):
         """私有、追加式事实记录；不会经 say/View 发给玩家。"""
         self.audit.append(deepcopy({"kind": kind, "day": self.world.day, "life": self.life, **fields}))
 
-    def advance(self):
-        self.world.step()
-        self.notify("tick")
-
     def mechanism_truth(self):
-        return {"order": deepcopy(self.order_state),
+        return {"order": asdict(self.order) if self.order else {},
                 "states": {m.name: m.snapshot() for m in self.mechanisms if m.name} if self.phase != "new" else {}}
 
     def mechanism_scores(self):
         task = self.mechanism("prospective")
         return {"prospective": task.metrics()} if task and self.phase != "new" else {}
+
+    # ---- 对外 ----
 
     @property
     def done(self) -> bool:
@@ -97,7 +121,7 @@ class Game:
         if self.phase == "death":
             return Ask("death", self.world.day, self.here)
         return Ask(self.phase, self.world.day, self.here, dict(self.want),
-                   {p: dict(seen) for p, seen in self.stalls.items()}, deepcopy(self.order_state.get("reference")))
+                   {p: dict(seen) for p, seen in self.stalls.items()}, deepcopy(self.order.reference), self.order.version)
 
     @property
     def days_played(self) -> int:
@@ -112,13 +136,13 @@ class Game:
     def start(self) -> Ask:
         if self.phase != "new":
             raise RuntimeError("这一局已经开始了")
-        self.notify("reset")
+        for m in self.mechanisms:
+            m.reset(self)
         self._begin_life()
         return self.ask
 
     def step(self, answer: int | None | DeliverMessage) -> Ask | None:
         """回答当前阶段；非法节点在推进前拒绝，不消耗游戏日。"""
-        self.decision_interrupted = False
         if isinstance(answer, DeliverMessage):
             mechanism = self.mechanism("prospective")
             if self.phase not in ("go", "choose") or mechanism is None:
@@ -142,15 +166,30 @@ class Game:
             raise RuntimeError("先调 start()" if self.phase == "new" else "这一局已经结束了")
         return self.ask
 
+    def play(self, make_agent) -> list[list[bool]]:
+        """make_agent(world, visible) 造一个 agent，它用 act(ask) 回答每一问，observe 收见闻。"""
+        agent = make_agent(self.world, self.visible)
+        self.observe = agent.observe
+        ask = self.start()
+        while ask is not None:
+            ask = self.step(agent.act(ask))
+        return self.lives
+
+    # ---- 一天怎么过 ----
+
+    def _advance(self):
+        self.world.step()
+        self.emit("tick")
+
     def _begin_life(self):
         g = self.cfg["game"]
         self.life += 1
         self.here = random.Random(f"{g['seed']}:spawn:{self.life}").choice(self.world.villages)
         self.log = []
         if self.life > 1:
-            self.say("rebirth", life=self.life)
-        self.advance()                                        # 第一日；之后只在逐日结算和死后空转时推进
-        self.notify("life_start")
+            self.emit("rebirth", life=self.life)
+        self._advance()                                       # 第一日；之后只在逐日结算和死后空转时推进
+        self.emit("life_start")
         self._order()
 
     def _look(self):
@@ -160,52 +199,41 @@ class Game:
 
     def _order(self):
         self.phase = "go"
-        self.want = self.order_at(self.world.day)
-        self.order_state = {"id": f"order:{self.world.day}", "issued_day": self.world.day,
-                            "version": 1, "target": None, "reference": None, "hops": 0, "versions": []}
-        self.useful_news = 0
+        day = self.world.day
+        self.order = Order(f"order:{day}", day, self.order_at(day))
         self._look()
         for m in self.mechanisms:
-            self.want = m.order(self, self.want)
-        self.order_state["versions"].append({"version": 1, "day": self.world.day, "want": dict(self.want)})
-        if self.order_state["reference"]:
-            self.say("reference_order", day=self.world.day, village=self.here,
-                     reference=self.order_state["reference"], want=dict(self.want))
+            m.order(self)
+        self.order.versions.append({"version": 1, "day": day, "want": dict(self.want)})
+        if self.order.reference:
+            self.emit("reference_order", day=day, village=self.here, reference=self.order.reference, want=dict(self.want))
         else:
-            self.say("order", day=self.world.day, village=self.here, **self.want)
-        if self.mechanisms:
-            self.record("order_issued", **self.order_state)
-        self.say("stalls", stalls=self.stalls)
-        for m in self.mechanisms:
-            m.news(self)
+            self.emit("order", day=day, village=self.here, **self.want)
+        self.emit("stalls", stalls=self.stalls)
+        self.emit("news")
 
     def _go(self, dest):
         if dest != self.here:
-            self.notify("depart")
+            self.emit("depart")
             days = self.world.distance(self.here, dest)
-            self.say("travel" if days else "walk", village=dest, days=days)
+            self.emit("travel" if days else "walk", village=dest, days=days)
             for _ in range(days):
                 if not self._settle_day("road"):
                     return                                   # 最后一天还在路上：不到达，也不再推进一天
             self.here = dest
             self._look()
-            self.say("stalls", stalls=self.stalls)
+            self.emit("stalls", stalls=self.stalls)
         self.phase = "choose"
-        self.notify("arrive")
+        self.emit("arrive")
 
     def _choose(self, person):
-        for mechanism in self.mechanisms:
-            if mechanism.before_choice(self, person):
-                return
-        if self.mechanisms:
-            self.record("choice", order_id=self.order_state["id"], version=self.order_state["version"],
-                        person=person, target=self.order_state["target"], want=dict(self.want),
-                        actual={s: self.world.value(person, s) for s in self.want} if person is not None else None)
+        if any(m.before_choice(self, person) for m in self.mechanisms):
+            return
         if person is None or any(self.stalls[person][s] != self.want[s] for s in self.visible):
             alive = self._settle_day("skip")
         else:
             success = all(self.world.value(person, s) == v for s, v in self.want.items())
-            wrong_person = self.order_state["target"] is not None and person != self.order_state["target"]
+            wrong_person = self.order.target is not None and person != self.order.target
             alive = self._settle_day("done" if success and not wrong_person else "fail", person, wrong_person)
         if alive:
             self._order()
@@ -216,55 +244,37 @@ class Game:
         if outcome in ("done", "fail"):
             seen = {s: self.world.value(person, s) for s in self.hidden}
             self.observe(self.world.day, person, seen)
+            goods = {s: self.want[s] for s in self.visible}
             if wrong_person:
-                self.say("wrong_person", person=person, goods={s: self.want[s] for s in self.visible}, traits=seen)
+                self.emit("wrong_person", person=person, goods=goods, traits=seen)
             else:
-                self.say(outcome, person=person, **(self.want | seen))
-            self.trades.append({"day": self.world.day, "person": person,
-                                "goods": {s: self.want[s] for s in self.visible}, "outcome": outcome})
+                self.emit(outcome, person=person, **(self.want | seen))
+            self.trades.append({"day": self.world.day, "person": person, "goods": goods, "outcome": outcome})
         elif outcome == "skip":
-            self.say("skip")
-        if self.mechanisms:
-            self.record("settlement", order_id=self.order_state["id"], version=self.order_state["version"],
-                        outcome=outcome, person=person, wrong_person=wrong_person)
-        self.notify("settled", outcome, person)
+            self.emit("skip")
+        self.emit("settled", outcome=outcome, person=person)
         g = self.cfg["game"]
         if len(self.log) == g["life"]:
             self.lives.append(self.log)
             self.phase = "death"
-            self.say("death", gap=g["gap"])
-            self.notify("life_end")
+            self.emit("death", gap=g["gap"])
+            self.emit("life_end")
             if self.life == g["lives"]:
                 self._afterlife()
             return False
-        self.advance()
+        self._advance()
         return True
 
     def _afterlife(self):
         for _ in range(self.cfg["game"]["gap"]):
-            self.advance()
+            self._advance()
         if self.life == self.cfg["game"]["lives"]:
             self.phase = "done"
-            self.notify("finish")
+            self.emit("finish")
         else:
             self._begin_life()
 
-    def play(self, make_agent) -> list[list[bool]]:
-        """回调适配；决策与文本接口一样交给 start / step，不包含规则。"""
-        agent = make_agent(self.world, self.visible)
-        self.observe = agent.observe
-        ask = self.start()
-        while ask is not None:
-            if ask.kind == "go":
-                answer = agent.go(ask.day, ask.here, ask.want, ask.stalls)
-            elif ask.kind == "choose":
-                answer = agent.choose(ask.day, ask.want, ask.stalls)
-            else:
-                answer = None
-            ask = self.step(answer)
-        return self.lives
-
 
 def play(cfg: dict, make_agent, say=None, mechanisms=None) -> list[list[bool]]:
-    """新建一局，让 make_agent(world, visible) 通过 go / choose / observe 玩完。"""
+    """新建一局，让 make_agent(world, visible) 用 act / observe 玩完。"""
     return Game(cfg, say=say, mechanisms=mechanisms).play(make_agent)

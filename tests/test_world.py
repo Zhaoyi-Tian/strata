@@ -18,11 +18,8 @@ class Stay:
     def __init__(self, world, visible):
         pass
 
-    def go(self, day, here, want, stalls):
-        return here
-
-    def choose(self, day, want, stalls):
-        return next(iter(stalls))
+    def act(self, ask):
+        return ask.here if ask.kind == "go" else next(iter(ask.stalls)) if ask.kind == "choose" else None
 
     def observe(self, day, p, seen):
         pass

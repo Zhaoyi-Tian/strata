@@ -142,12 +142,11 @@ class TestEnv(unittest.TestCase):
             def __init__(self):
                 self.orders = self.news_ = 0
 
-            def order(self, game, want):
+            def order(self, game):
                 self.orders += 1
-                return want
 
-            def news(self, game):
-                self.news_ += 1
+            def on(self, game, kind, **kw):
+                self.news_ += kind == "news"
 
         m = Count()
         self.assertEqual(play(short(), AGENTS[0], mechanisms=[m]), play(short(), AGENTS[0]))  # 什么都不做的机制不改结果

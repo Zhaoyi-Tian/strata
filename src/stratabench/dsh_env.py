@@ -16,7 +16,7 @@ class Episode:
         self.env = Env(cfg, seed=seed)
         self.log = log
         feedback = self.env.reset()
-        self.protocol = "part-a-v1" if self.env.game.mechanisms else "daily-orders-v2"
+        self.protocol = "part-a-v2" if self.env.game.mechanisms else "daily-orders-v2"
         self.record("start", feedback=feedback, protocol=self.protocol, config=self.env.cfg,
                     mechanism_events=self.env.game.audit[:])
         self.initial = self.public(feedback) | {"instructions": self.env.instructions, "game": self.env.cfg["game"],

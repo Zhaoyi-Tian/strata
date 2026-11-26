@@ -155,7 +155,7 @@ for action in ("去 柳溪", "找 绣娘", "去 鸦岭", "不做", "去 白垩�
 
 ## 自定义机制
 
-新机制继承 `strata.mechanisms.Mechanism`，Game 每天在两个时刻调它：`order(game, want)`（基础订单已按日生成，可以改）和 `news(game)`（订单和摊子说完、拿主意之前，可以 `game.say(...)` 加话）。机制自己按日取随机数，不要动 `world.rng`；这样调用次数不同也不会让后续外部条件漂移。详见 `src/strata/mechanisms/__init__.py`。
+新机制继承 `strata.mechanisms.Mechanism`，常用两个时刻：`order(game)`（基础订单已按日生成，可以改 `game.order`）和 `on(game, "news")`（订单和摊子说完、拿主意之前，可以 `game.emit(...)` 加话）。机制自己按日取随机数，不要动 `world.rng`；这样调用次数不同也不会让后续外部条件漂移。详见 `src/strata/mechanisms/__init__.py`。
 
 Part A 增加了初始化、逐日、抵达/离开、结算和生命周期挂钩。开启前瞻机制时，`env.step("传话 人名 口信")` 不耗游戏日；开启修订时，快捷购买可能被新口信打断，反馈后须重新选择。
 `Ask.reference` 只包含公开指称，`observation()` 不自动解出对象或补回旧委托。
@@ -185,7 +185,7 @@ Part A 增加了初始化、逐日、抵达/离开、结算和生命周期挂钩
 
 内核、事件、`Ask` 和 `View.name(node)` 中的村、人、地区统一使用世界节点编号。
 `View(view_config, world)` 在显示时按地图顺序给地区和村起名，按节点给人起名；`View.map()` 不再重复传地图尺寸。
-原来的 `Game.run()` 生成器已移除；回调式调用可继续用 `play(cfg, make_agent)`，或给一个已创建的 `Game` 调用 `game.play(make_agent)`。
+程序 agent 用 `play(cfg, make_agent)` 或 `game.play(make_agent)`：`make_agent(world, visible)` 造一个 agent，它用 `act(ask)` 回答每一问（`go` 回一个村，`choose` 回一个人或 `None`），用 `observe(day, person, seen)` 收见闻。
 
 `tests/test_game.py` 独立检查不同走法和寿命下的日期、路程、得分天数及死亡边界；
 这些检查不以文本版和回调版相互相等作为唯一依据。

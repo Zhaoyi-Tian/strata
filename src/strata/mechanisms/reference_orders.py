@@ -15,10 +15,10 @@ class ReferenceOrders(Mechanism):
     def reset(self, game):
         self.orders = []
 
-    def order(self, game, want):
-        rng = self.rng(game, game.world.day, "order")
+    def order(self, game):
+        rng, want = self.rng(game, game.world.day, "order"), game.want
         if rng.random() >= self.rate or not game.visible:
-            return want
+            return
         w, slot = game.world, game.visible[0]
 
         def fits(person):
@@ -35,13 +35,12 @@ class ReferenceOrders(Mechanism):
             for o in self.orders if o["hops"] < self.max_hops and fits(o["target"])
         ]
         if not candidates:
-            return want
+            return
         chosen = deepcopy(rng.choice(candidates))
-        game.order_state.update(target=chosen["target"], reference=chosen["public"], hops=chosen["hops"])
-        entry = {"id": game.order_state["id"], "day": w.day, **chosen}
+        game.order.target, game.order.reference, game.order.hops = chosen["target"], chosen["public"], chosen["hops"]
+        entry = {"id": game.order.id, "day": w.day, **chosen}
         self.orders.append(entry)
         game.record("reference_order", **entry)
-        return want
 
     def snapshot(self):
         return {"count": len(self.orders), "last": deepcopy(self.orders[-1]) if self.orders else None}

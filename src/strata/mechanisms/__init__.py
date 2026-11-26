@@ -1,24 +1,21 @@
-"""新机制（玩法 A）挂在这里：传闻、指称订单、改主意、前瞻任务、干扰信息……
+"""Part A 的机制：传闻、指称订单、改主意、前瞻任务、干扰信息。每项可在 [mechanisms] 里单独打开。
 
-每个机制是一个对象，挂到 Game(mechanisms=[...])、play(..., mechanisms=[...]) 或 Env(..., mechanisms=[...]) 上。
-Game 保留两个原有挂钩：
+一个机制是一个对象，挂到 Game / Env / play 的 mechanisms=[...] 上（None 按配置装配，[] 全关）。它只有五个时刻：
 
-  order(game, want) -> want   订单刚生成、还没说出来。可以改订单（指称订单、改主意、前瞻任务）。
-  news(game)                  当天的订单和摊子说完、拿主意之前。可以用 game.say(种类, ...) 加几句话
-                              （传闻、干扰信息）；新的种类要在世界观的 [lines] 里加一行台词。
-
-能用到的状态：game.world（真值，机制可以看）、game.here、game.want、game.life、game.log、game.say。
+  reset(game)                    每局开场，清空自己的状态。
+  order(game)                    今天的订单刚生成、还没说出来；可以改 game.order（指称订单）。
+  on(game, kind, **kw)           Game 发生的每件事：公开事件（order、stalls、done、travel、rumor……），
+                                 以及只发给机制的时刻 tick（世界过了一天，含路上和死后）、news（订单和摊子说完）、
+                                 arrive / depart（到达 / 离开一个村）、settled（一天结算完）、
+                                 life_start / life_end / finish。
+  before_choice(game, person)    要买之前；返回 True 就先不买，把新消息给玩家看，再让他重选（改主意）。
+  snapshot()                     只给评测看的状态。
 
 约定：
-  机制要用随机数就自己开一个，比如 random.Random(f"{seed}:rumor")，不要动 world.rng。
-  基础订单由 game.order_at(day) 按世界日固定，出生地点由 seed 和世数固定。机制改订单时也应按日取随机数，
-  避免不同走法调用次数不同，导致后续订单错位。
-  reset 在每局开场清空状态；tick 在每次世界日推进后调用，包括路途和死后空转。
-  life_start / life_end / finish 通知生命周期；arrive 在留村或抵达后、交易前调用，depart 在离开前调用。
-  before_choice 返回 True 时暂停本次购买，先展示新消息，再让玩家重新选择。
-  settled 在每日结算后、推进世界前调用；snapshot 只供评测。
-  game.record 追加私有审计；game.say 仅发送公开事件。不要把答案放进公开事件。
-  村和人都用世界节点编号；game.say 的 village / person 字段也遵守这一约定，由 View 起名字。
+  机制要说话就用 game.emit(种类, ...)，别的机制也听得到；新的种类要在世界观的 [lines] 里加一行台词。
+  要私下记一笔就用 game.record(种类, ...)，只进评测审计，不给玩家。不要把答案放进公开事件。
+  要随机数就用 self.rng(game, 日期, ...)，按日取、不要动 world.rng，走法不同也不会让后面的随机数错位。
+  村和人都用世界节点编号，由 View 起名字。
 """
 
 
@@ -49,38 +46,17 @@ class Mechanism:
     def reset(self, game):
         pass
 
-    def tick(self, game):
+    def order(self, game):
         pass
 
-    def life_start(self, game):
-        pass
-
-    def life_end(self, game):
-        pass
-
-    def finish(self, game):
-        pass
-
-    def arrive(self, game):
-        pass
-
-    def depart(self, game):
+    def on(self, game, kind, **kw):
         pass
 
     def before_choice(self, game, person) -> bool:
         return False
 
-    def settled(self, game, outcome, person):
-        pass
-
     def snapshot(self):
         return {}
-
-    def order(self, game, want: dict) -> dict:
-        return want
-
-    def news(self, game) -> None:
-        pass
 
 
 def configured(cfg):
@@ -117,12 +93,15 @@ def validate_view(cfg, mechanisms):
     required = {
         "rumor": ("rumor",),
         "reference_orders": ("reference_order", "reference_transaction", "reference_previous", "wrong_person"),
-        "revisions": ("revision", "revision_open", "reference_transaction", "reference_previous"),
+        "revisions": ("revision_open", "revision_unref", "reference_transaction", "reference_previous"),
         "prospective": ("commission", "message_delivered"),
         "distraction": ("chatter",),
     }
     view = cfg["view"]
+    slots = [s["name"] for s in view["slots"]]
     for mechanism in mechanisms:
+        if mechanism.name == "rumor" and not mechanism.all_truthful and mechanism.credibility_slot not in slots:
+            raise ValueError("rumor.credibility_slot must name an existing slot")
         for key in required.get(mechanism.name, ()):
             if not isinstance(view["lines"].get(key), str):
                 raise ValueError(f"worldview missing lines.{key}")
