@@ -55,11 +55,11 @@ score = env.lives                 # 每一世每天成没成单（list[list[bool
 
 | 名字 | 是什么 |
 |---|---|
-| `Env(cfg=None, seed=None, mechanisms=())` | 一局。`cfg` 来自 `strata.load()`；`mechanisms` 见 `src/strata/mechanisms/__init__.py` |
+| `Env(cfg=None, seed=None, mechanisms=None)` | 一局。默认按配置挂载机制，显式列表覆盖配置，`[]` 全关；详见 [Part A](part-a.md) |
 | `env.instructions` | 常驻说明（str） |
 | `env.reset() -> str` | 开局；再调一次就从头再来（同一个 seed，同一个世界） |
 | `env.step(action) -> (obs, done, info)` | 回一个动作 |
-| `env.legal_actions() -> list[str]` | 此刻能回的所有动作（给不给 agent 看，由实验设置决定） |
+| `env.legal_actions() -> list[str]` | 可枚举的采购动作；自由文本传话格式见 instructions，不从待办生成答案 |
 | `env.observation() -> str` | 当前完整公开画面，用于换窗后重绘；不包含过往交易反馈，不推进世界 |
 | `env.life_ended` | 一世刚到头、下一世还没开始 |
 | `env.done` | 整局结束 |
@@ -156,6 +156,11 @@ for action in ("去 柳溪", "找 绣娘", "去 鸦岭", "不做", "去 白垩�
 ## 自定义机制
 
 新机制继承 `strata.mechanisms.Mechanism`，Game 每天在两个时刻调它：`order(game, want)`（基础订单已按日生成，可以改）和 `news(game)`（订单和摊子说完、拿主意之前，可以 `game.say(...)` 加话）。机制自己按日取随机数，不要动 `world.rng`；这样调用次数不同也不会让后续外部条件漂移。详见 `src/strata/mechanisms/__init__.py`。
+
+Part A 增加了初始化、逐日、抵达/离开、结算和生命周期挂钩。开启前瞻机制时，`env.step("传话 人名 口信")` 不耗游戏日；开启修订时，快捷购买可能被新口信打断，反馈后须重新选择。
+`Ask.reference` 只包含公开指称，`observation()` 不自动解出对象或补回旧委托。
+启用机制时 `info.mechanism_events` 记录本次动作新增的私有审计，`truth().mechanisms` 记录内部订单及机制状态，均不发给模型。
+完整配置、执行窗口和计分规则见 [Part A](part-a.md)。
 
 ## 不变量
 

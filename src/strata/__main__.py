@@ -69,6 +69,10 @@ def main():
     cfg = load(a.config)
     if a.seed is not None:
         cfg["game"]["seed"] = a.seed
+    if any(m.get("enabled", False) for m in cfg.get("mechanisms", {}).values()):
+        from .env import Env, interactive
+        interactive(Env(cfg))
+        return
     game = Game(cfg)
     view = View(cfg["view"], game.world)
     game.say = show(view, game.visible)

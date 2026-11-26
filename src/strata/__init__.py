@@ -2,8 +2,8 @@
 
 from .config import load
 from .env import Env
-from .game import Ask, Game, play
+from .game import Ask, DeliverMessage, Game, play
 from .view import View
 from .world import World
 
-__all__ = ["Ask", "Env", "Game", "View", "World", "load", "play"]
+__all__ = ["Ask", "DeliverMessage", "Env", "Game", "View", "World", "load", "play"]

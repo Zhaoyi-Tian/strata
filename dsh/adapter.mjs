@@ -11,7 +11,7 @@ class GameProcess {
     if (options.config) args.push('--config', options.config)
     this.child = spawn('uv', args, {
       cwd: options.projectRoot, stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' },
+      env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1', PYTHONIOENCODING: 'utf-8' },
     })
     this.ready = Promise.withResolvers()
     this.pending = this.ready
@@ -69,6 +69,7 @@ export async function apply(ctx, options) {
   const game = new GameProcess(options)
   ctx.effect(() => () => game.close())
   const initial = await game.ready.promise
+  game.mechanismConfig = initial.mechanism_config
   ctx.provide('strataGame', game)
   ctx.systemPrompt.section({
     name: 'strata-rules', order: 0, complete: true, interpolate: false,
@@ -85,7 +86,8 @@ export async function apply(ctx, options) {
   ctx.tools.register(defineTool({
     name: 'strata_step',
     description: '执行一个游戏动作，返回结果和下一问。整局结束后停止调用。',
-    parameters: { action: { type: 'string', required: true, description: '找 <人名> / 不做 / 去 <村名> / 留下' } },
+    parameters: { action: { type: 'string', required: true,
+      description: '找 <人名> / 不做 / 去 <村名> / 留下；规则启用传话时可用：传话 <人名> <口信>' } },
     output: { schema: { type: 'string' }, render: (_args, text) => [{ type: 'text', text }] },
     async execute({ action }, exec) {
       if (game.current.done) return '整局结束。'

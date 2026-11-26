@@ -1,0 +1,67 @@
+{
+  "experiment": "Part A first formal run",
+  "date": "2026-11-26",
+  "timezone": "Asia/Shanghai",
+  "source_run_id": "full-seed0-2026-11-26T08-09-27.199Z-c524b252",
+  "implementation_commit": "122973ff3d6c9bfef943492662107a6f3ce6650b",
+  "protocol": "part-a-v1",
+  "model": {
+    "provider": "deepseek-official",
+    "id": "deepseek-v4.1-flash-1017",
+    "reasoningEffort": "high",
+    "maxOutputTokens": 8192
+  },
+  "transport": {
+    "service": "AIhubmix",
+    "messages_endpoint": "https://aihubmix.com/v1/messages"
+  },
+  "context": {
+    "mode": "full",
+    "preserve_history_across_lives": true,
+    "context_windows": 0,
+    "max_requests": 500
+  },
+  "source_artifacts_sha256": {
+    "env.jsonl": "322eaee2e7a582ffc3697d4e809488fe6aac8397a313f6c8ececb94e684bec0c",
+    "api.jsonl": "9c6119a53c8ce57e3e05cb19bbfbe93bd087d5165becbce46702c0cb7aa4adac",
+    "summary.json": "0cee6d9c9c560e568389e7271f8f193fca9c6554a37d497401f798af3b824ccd",
+    "config.json": "bdd7b157750c1ed4edf41750edd14a61b411b9127706cd2a2ce429283fb0fd44",
+    "post-fix-verification.json": "ec84f5904f37dd296db9f11e77b675edf8012c74a0ef85411ef677fac249a362"
+  },
+  "original_log_checks": {
+    "verified": true,
+    "opening_feedback_in_first_request": 1,
+    "native_session_opening_messages": 1,
+    "runtime_opening_replays": 0,
+    "native_tool_results_matched": 124,
+    "requests": 124,
+    "http_200_responses": 124,
+    "source_files_unchanged": 44,
+    "preflight_tests": {
+      "python": {
+        "passed": 49,
+        "failed": 0
+      },
+      "node": {
+        "passed": 10,
+        "failed": 0
+      },
+      "opening_regressions": [
+        "full",
+        "summary",
+        "notes"
+      ],
+      "date": "2026-11-26"
+    }
+  },
+  "published_digest_format": "SHA-256 of UTF-8 text with CRLF normalized to LF",
+  "published_files_sha256": {
+    "game.toml": "aa52d779bf0bdbe93711a00b6067baab7ff355cdf0017dceadbd3be59c93eea2",
+    "run.yml": "abab0543dd16af999cde68cbcd828920077542e9c70ad324cde7b6197ec83c3a",
+    "trajectory.jsonl": "5ddf138efdc20b76515fdb2a778b1a56306bd01d47b213a411fde724c4f3d429",
+    "calls.json": "4b95c70e4cc7d782725f19f336bb804eef40a5d67c1c3956daf5c971c67a1afd",
+    "results.json": "b9ada1e416484a041710447c1714a71571bae62ac580e2f8aa5ed79cedaab6c3",
+    "traces.md": "458b192583b61357242270fd68b533b684333317d7dee58afb3fc00c8489dcec",
+    "verify.py": "97dd71599775db40bc037bf90b1a4347c0d582a89ebeed0972bcdcffe57e79bd"
+  }
+}

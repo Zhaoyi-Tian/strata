@@ -40,7 +40,7 @@ export async function runEpisode(input = {}, { setup, signal } = {}) {
   options.runDir = join(resolve(options.output), `${mode}-seed${options.seed}-${stamp}-${randomUUID().slice(0, 8)}`)
   mkdirSync(options.runDir, { recursive: true })
   const json = (file, value) => writeFileSync(join(options.runDir, file), JSON.stringify(value, null, 2) + '\n')
-  json('run.json', { ...options, protocol: 'daily-orders-v2' })
+  json('run.json', { ...options, protocol: null })
   json('config.json', { model: options.model, context: options.context, maxRequests: options.maxRequests })
   copyFileSync(profilePath, join(options.runDir, 'profile.yml'))
   writeFileSync(join(options.runDir, 'api.jsonl'), '', { flag: 'wx' })
@@ -58,6 +58,8 @@ export async function runEpisode(input = {}, { setup, signal } = {}) {
     const inactive = [...ctx.get('loader').entries()].filter(entry => !entry.disabled && entry.fiber?.state !== 2)
     if (inactive.length) throw new Error(`Profile plugins did not activate: ${inactive.map(entry => entry.id).join(', ')}`)
     if (!ctx.get('strataGame')) throw new Error('Strata adapter did not start; inspect the profile startup errors')
+    json('run.json', { ...options, protocol: ctx.get('strataGame').current.protocol,
+      mechanisms: ctx.get('strataGame').mechanismConfig })
     // Own the episode boundary before any memory hooks: no sampling or compaction after Env.done.
     ctx.on('agent/pre-step', (_payload, next) => {
       if (!ctx.get('strataGame').current.done) return next()
@@ -69,7 +71,12 @@ export async function runEpisode(input = {}, { setup, signal } = {}) {
     }, { cwd: options.projectRoot })
     signal?.addEventListener('abort', cancel, { once: true })
     signal?.throwIfAborted()
-    agent.followup(createUserMessage({ content: [{ type: 'text', text: '开始这一局。持续完成采购，直到整局结束。' }], source: { kind: 'user' } }))
+    // Runtime snapshots omit one-off news, so retain reset feedback in the initial user message.
+    agent.followup(createUserMessage({
+      content: [{ type: 'text', text: '开始这一局。持续完成采购，直到整局结束。\n\n'
+        + ctx.get('strataGame').current.feedback }],
+      source: { kind: 'user' },
+    }))
     await agent.whenIdle()
     await ctx.get('sessions').flush(agent.session)
     reason = agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')?.data.reason
@@ -137,6 +144,7 @@ function summarizeRun(options, { game, agent, calls, error, reason, stoppedAtGam
   const events = agent?.session.snapshotEvents() ?? []
   return {
     eval_completed: completed, termination: completed ? 'env_done' : reason?.kind ?? 'startup_error',
+    protocol: current?.protocol ?? null,
     error: error ?? null, runDir: options.runDir,
     mode: options.context.mode, seed: options.seed, provider: options.model.provider, model: options.model.id,
     sessionId: agent?.session.id ?? null, daysPlayed: current?.days_played ?? 0,
@@ -145,7 +153,8 @@ function summarizeRun(options, { game, agent, calls, error, reason, stoppedAtGam
     windows: events.filter(event => event.type === 'user/message' && event.data.source.kind === 'context-window'
       && event.data.source.event === 'open').length,
     usage, callsWithoutUsage: calls.filter(call => call.usage === undefined).length,
-    score: completed ? { overall: mean(all), perLife: lives.map(mean), rebirthEarly: mean(early), lives } : null,
+    score: completed ? { overall: mean(all), perLife: lives.map(mean), rebirthEarly: mean(early), lives,
+      mechanisms: current.mechanism_scores ?? {} } : null,
   }
 }
 

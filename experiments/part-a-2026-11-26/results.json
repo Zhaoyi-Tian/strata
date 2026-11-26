@@ -1,0 +1,233 @@
+{
+  "protocol": "part-a-v1",
+  "completed": true,
+  "final_world_day": 180,
+  "purchase": {
+    "days": 80,
+    "successes": 14,
+    "failures": 44,
+    "skips": 11,
+    "road_days": 11,
+    "global_no_qualified_person": 17,
+    "selected_village_no_qualified_person": 36,
+    "local_qualified_but_unsuccessful": 2,
+    "success_rate": 0.175,
+    "per_life": [
+      {
+        "life": 1,
+        "days": 8,
+        "successes": 0,
+        "failures": 3,
+        "skips": 5,
+        "road_days": 0,
+        "success_rate": 0.0,
+        "global_no_qualified_person": 0,
+        "selected_village_no_qualified_person": 8,
+        "local_qualified_but_unsuccessful": 0
+      },
+      {
+        "life": 2,
+        "days": 8,
+        "successes": 0,
+        "failures": 7,
+        "skips": 0,
+        "road_days": 1,
+        "success_rate": 0.0,
+        "global_no_qualified_person": 0,
+        "selected_village_no_qualified_person": 6,
+        "local_qualified_but_unsuccessful": 1
+      },
+      {
+        "life": 3,
+        "days": 8,
+        "successes": 0,
+        "failures": 4,
+        "skips": 2,
+        "road_days": 2,
+        "success_rate": 0.0,
+        "global_no_qualified_person": 4,
+        "selected_village_no_qualified_person": 2,
+        "local_qualified_but_unsuccessful": 0
+      },
+      {
+        "life": 4,
+        "days": 8,
+        "successes": 0,
+        "failures": 6,
+        "skips": 1,
+        "road_days": 1,
+        "success_rate": 0.0,
+        "global_no_qualified_person": 3,
+        "selected_village_no_qualified_person": 4,
+        "local_qualified_but_unsuccessful": 0
+      },
+      {
+        "life": 5,
+        "days": 8,
+        "successes": 7,
+        "failures": 0,
+        "skips": 0,
+        "road_days": 1,
+        "success_rate": 0.875,
+        "global_no_qualified_person": 0,
+        "selected_village_no_qualified_person": 0,
+        "local_qualified_but_unsuccessful": 0
+      },
+      {
+        "life": 6,
+        "days": 8,
+        "successes": 0,
+        "failures": 7,
+        "skips": 0,
+        "road_days": 1,
+        "success_rate": 0.0,
+        "global_no_qualified_person": 1,
+        "selected_village_no_qualified_person": 6,
+        "local_qualified_but_unsuccessful": 0
+      },
+      {
+        "life": 7,
+        "days": 8,
+        "successes": 5,
+        "failures": 2,
+        "skips": 0,
+        "road_days": 1,
+        "success_rate": 0.625,
+        "global_no_qualified_person": 1,
+        "selected_village_no_qualified_person": 0,
+        "local_qualified_but_unsuccessful": 1
+      },
+      {
+        "life": 8,
+        "days": 8,
+        "successes": 0,
+        "failures": 5,
+        "skips": 2,
+        "road_days": 1,
+        "success_rate": 0.0,
+        "global_no_qualified_person": 4,
+        "selected_village_no_qualified_person": 3,
+        "local_qualified_but_unsuccessful": 0
+      },
+      {
+        "life": 9,
+        "days": 8,
+        "successes": 2,
+        "failures": 4,
+        "skips": 1,
+        "road_days": 1,
+        "success_rate": 0.25,
+        "global_no_qualified_person": 1,
+        "selected_village_no_qualified_person": 4,
+        "local_qualified_but_unsuccessful": 0
+      },
+      {
+        "life": 10,
+        "days": 8,
+        "successes": 0,
+        "failures": 6,
+        "skips": 0,
+        "road_days": 2,
+        "success_rate": 0.0,
+        "global_no_qualified_person": 3,
+        "selected_village_no_qualified_person": 3,
+        "local_qualified_but_unsuccessful": 0
+      }
+    ]
+  },
+  "mechanisms": {
+    "rumor": {
+      "messages": 35,
+      "fabricated": 27,
+      "historical_fact_differs_from_current": 0
+    },
+    "reference_orders": {
+      "orders": 19,
+      "one_hop": 14,
+      "two_hop": 5,
+      "successes": 5,
+      "failures": 13,
+      "skips": 1,
+      "wrong_person": 0
+    },
+    "revisions": {
+      "events": 12,
+      "orders": 12,
+      "successes": 4,
+      "failures": 8,
+      "skips": 0
+    },
+    "prospective": {
+      "issued": 7,
+      "opportunities": 6,
+      "completed": 6,
+      "missed": 0,
+      "untriggered": 1,
+      "incorrect": 0,
+      "duplicates": 0,
+      "completion_rate": 1.0,
+      "cross_life_completed": 4,
+      "completions": [
+        {
+          "task_id": "task:21:1",
+          "issued_life": 2,
+          "completed_life": 2,
+          "issued_day": 21,
+          "completed_day": 22
+        },
+        {
+          "task_id": "task:57:2",
+          "issued_life": 4,
+          "completed_life": 4,
+          "issued_day": 57,
+          "completed_day": 59
+        },
+        {
+          "task_id": "task:74:3",
+          "issued_life": 5,
+          "completed_life": 6,
+          "issued_day": 74,
+          "completed_day": 93
+        },
+        {
+          "task_id": "task:95:4",
+          "issued_life": 6,
+          "completed_life": 7,
+          "issued_day": 95,
+          "completed_day": 109
+        },
+        {
+          "task_id": "task:98:5",
+          "issued_life": 6,
+          "completed_life": 7,
+          "issued_day": 98,
+          "completed_day": 112
+        },
+        {
+          "task_id": "task:129:6",
+          "issued_life": 8,
+          "completed_life": 9,
+          "issued_day": 129,
+          "completed_day": 148
+        }
+      ]
+    },
+    "distraction": {
+      "messages": 71
+    }
+  },
+  "interaction": {
+    "model_requests": 124,
+    "model_actions": 124,
+    "invalid_actions": 2,
+    "automatic_continues": 9,
+    "summary_calls": 0,
+    "usage": {
+      "inputTokens": 60918,
+      "outputTokens": 20868,
+      "cacheReadTokens": 3487872,
+      "cacheWriteTokens": 0,
+      "totalTokens": 3569658
+    }
+  }
+}

@@ -5,6 +5,8 @@ class View:
     def __init__(self, view: dict, world):
         self.world = world
         self.lines, self.intro = view["lines"], view["intro"]
+        self.visible = [s["name"] for s in view["slots"] if s["visible"]]
+        self.claims = view.get("mechanism_text", {}).get("claims", {})
         self.pools = {"region": view["regions"], "village": view["villages"], "person": view["people"]}
         self.names = {k: {} for k in self.pools}
         self.regions = [n for n, d in enumerate(world.depth) if d == 0]
@@ -31,7 +33,25 @@ class View:
         if kind == "stalls":
             return "，".join(self.lines["stall"].format(person=self.name(p), **seen)
                             for p, seen in kw["stalls"].items()) + "。"
-        for k in ("village", "person"):
+        if kind == "rumor":
+            kw["claim"] = self.claims.get(kw["slot"], "在‘{slot}’这件事上是{value}").format(**kw)
+        if kind == "revision" and kw["reference"] is None:
+            kind = "revision_open"
+        if "reference" in kw:
+            kw["reference"] = self.reference(kw["reference"]) if kw["reference"] else "任一符合要求的人"
+        if "want" in kw:
+            want = kw.pop("want")
+            kw["goods"] = "、".join(v for s, v in want.items() if s in self.visible)
+            kw["conditions"] = "、".join(v for s, v in want.items() if s not in self.visible)
+        if kind == "wrong_person":
+            kw["goods"] = "、".join(kw["goods"].values())
+            kw["traits"] = "、".join(f"{s}：{v}" for s, v in kw["traits"].items())
+        for k in ("village", "person", "speaker"):
             if k in kw:
                 kw[k] = self.name(kw[k])
         return self.lines[kind].format(**kw)
+
+    def reference(self, reference):
+        """只渲染公开指称，不查询世界或内部正确人选。"""
+        kind = "reference_transaction" if reference["kind"] == "transaction" else "reference_previous"
+        return self.lines[kind].format(**reference)

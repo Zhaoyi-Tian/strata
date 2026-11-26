@@ -1,0 +1,15 @@
+# 五项全开的初版。参数继承 default.toml；单项改为 false 即可关闭。
+[mechanisms.rumor]
+enabled = true
+
+[mechanisms.reference_orders]
+enabled = true
+
+[mechanisms.revisions]
+enabled = true
+
+[mechanisms.prospective]
+enabled = true
+
+[mechanisms.distraction]
+enabled = true

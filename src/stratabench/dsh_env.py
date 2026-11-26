@@ -16,8 +16,11 @@ class Episode:
         self.env = Env(cfg, seed=seed)
         self.log = log
         feedback = self.env.reset()
-        self.record("start", feedback=feedback)
-        self.initial = self.public(feedback) | {"instructions": self.env.instructions, "game": self.env.cfg["game"]}
+        self.protocol = "part-a-v1" if self.env.game.mechanisms else "daily-orders-v2"
+        self.record("start", feedback=feedback, protocol=self.protocol, config=self.env.cfg,
+                    mechanism_events=self.env.game.audit[:])
+        self.initial = self.public(feedback) | {"instructions": self.env.instructions, "game": self.env.cfg["game"],
+                                               "mechanism_config": self.env.cfg.get("mechanisms", {})}
 
     def record(self, kind, **data):
         self.log.write(json.dumps({"kind": kind, **data, "truth": self.env.truth()}, ensure_ascii=False) + "\n")
@@ -26,7 +29,8 @@ class Episode:
     def public(self, feedback, parse_ok=True):
         return {"feedback": feedback, "observation": self.env.observation(), "done": self.env.done,
                 "parse_ok": parse_ok, "lives": self.env.lives, "life": self.env.game.life,
-                "day": self.env.world.day, "days_played": self.env.game.days_played}
+                "day": self.env.world.day, "days_played": self.env.game.days_played, "protocol": self.protocol,
+                **({"mechanism_scores": self.env.game.mechanism_scores()} if self.env.done else {})}
 
     def step(self, action):
         if not isinstance(action, str):
@@ -42,6 +46,9 @@ class Episode:
 
 
 def main():
+    # JSONL 是 UTF-8；不随 Windows 控制台代码页变化。
+    sys.stdin.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config")
     ap.add_argument("--seed", type=int, required=True)
