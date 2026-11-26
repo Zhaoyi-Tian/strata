@@ -4,7 +4,19 @@ import { createInterface } from 'node:readline'
 import { join } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 
-class GameProcess {
+/** Python rejected one request (bad field, wrong type…); the game itself is still fine. */
+export class RequestError extends Error {}
+
+/** Wait for promise, but give up early when signal aborts. Giving up does not cancel the promise. */
+function abortable(promise, signal) {
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(signal.reason)
+    signal.addEventListener('abort', abort, { once: true })
+    promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort))
+  })
+}
+
+export class GameProcess {
   constructor(options) {
     const args = ['run', '--no-sync', '--project', options.projectRoot, 'python', '-u', '-m', 'stratabench.dsh_env',
       '--seed', String(options.seed), '--log', join(options.runDir, 'env.jsonl')]
@@ -14,7 +26,8 @@ class GameProcess {
       env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1', PYTHONIOENCODING: 'utf-8' },
     })
     this.ready = Promise.withResolvers()
-    this.pending = this.ready
+    this.reply = this.ready                  // the reply Python owes us next
+    this.settled = this.ready.promise.then(() => {}, () => {})
     this.stderr = ''
     this.exited = new Promise(resolve => this.child.once('close', resolve))
     this.child.stderr.on('data', chunk => { this.stderr = (this.stderr + chunk).slice(-16000) })
@@ -25,34 +38,38 @@ class GameProcess {
     this.lines.on('line', line => {
       try {
         const packet = JSON.parse(line)
-        if (!this.pending) throw new Error('Unexpected Strata response')
-        if (packet.error) { this.fail(new Error(packet.error)); return }
-        const pending = this.pending
-        this.pending = undefined
-        this.current = packet
-        pending.resolve(packet)
+        const reply = this.reply
+        if (!reply) throw new Error('Unexpected Strata response')
+        this.reply = undefined
+        if (packet.error) { reply.reject(new RequestError(packet.error)); return }
+        this.current = packet                // even if the caller gave up waiting, the game did move on
+        reply.resolve(packet)
       } catch (error) { this.fail(error) }
     })
   }
 
+  /** The process itself is broken (exited, bad output): every later step fails. */
   fail(error) {
     this.failure ??= error
-    this.pending?.reject(error)
-    this.pending = undefined
+    this.reply?.reject(error)
+    this.reply = undefined
   }
 
   async step(action, signal) {
     signal.throwIfAborted()
     if (this.failure) throw this.failure
-    if (this.pending) throw new Error('Strata actions must run serially')
-    const pending = Promise.withResolvers()
-    this.pending = pending
-    const abort = () => this.fail(signal.reason)
-    signal.addEventListener('abort', abort, { once: true })
+    if (this.busy) throw new Error('Strata actions must run serially')
+    this.busy = true
     try {
+      await this.settled                     // a reply an aborted call left behind still lands first
+      if (this.failure) throw this.failure
+      signal.throwIfAborted()
+      const reply = Promise.withResolvers()
+      this.reply = reply
+      this.settled = reply.promise.then(() => {}, () => {})
       this.child.stdin.write(JSON.stringify({ action }) + '\n')
-      return await pending.promise
-    } finally { signal.removeEventListener('abort', abort) }
+      return await abortable(reply.promise, signal)
+    } finally { this.busy = false }
   }
 
   async close() {
@@ -91,7 +108,13 @@ export async function apply(ctx, options) {
     output: { schema: { type: 'string' }, render: (_args, text) => [{ type: 'text', text }] },
     async execute({ action }, exec) {
       if (game.current.done) return '整局结束。'
-      const packet = await game.step(action, exec.signal)
+      let packet
+      try {
+        packet = await game.step(action, exec.signal)
+      } catch (error) {
+        if (!(error instanceof RequestError)) throw error
+        packet = { parse_ok: false, feedback: `这个动作没被接受：${error.message}`, done: false }
+      }
       game.actions = (game.actions ?? 0) + 1
       game.invalidActions = (game.invalidActions ?? 0) + Number(!packet.parse_ok)
       return packet.feedback + (packet.done ? '\n整局结束。' : '')

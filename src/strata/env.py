@@ -40,6 +40,7 @@ PROMPT = {
 }
 
 _TAIL = re.compile(r"[\s。．.！!，,；;]+$")
+_QUOTES = "「」“”\"'` "
 _ACTION = re.compile(r"(找|去)\s*(\S+)|留下|不做")
 
 
@@ -199,7 +200,9 @@ class Env:
         ask: Ask = self.ask
         if ask.kind == "death":
             return [None], None
-        text = _TAIL.sub("", str(action).strip()).strip("「」“”\"'` ")
+        text, before = str(action).strip(), None
+        while text != before:                                   # 句尾标点和引号可能互相包着：「找 张三。」
+            before, text = text, _TAIL.sub("", text).strip(_QUOTES)
         if text.startswith("传话"):
             if not self.game.mechanism("prospective"):
                 return [], "这一局没有传话动作。"
@@ -239,7 +242,7 @@ class Env:
             "asked": asked,                                       # 这一步回答的是哪一问
             "phase": g.phase,                                    # 下一问
             "action": action, "parse_ok": error is None, "error": error,
-            "life_ended": any(e["kind"] == "death" for e in self._events) if error is None else False,
+            "life_ended": error is None and self.life_ended,     # 最后一世到头是 done，不算
             "events": [] if error else self._events,              # 这一步发生的事；村和人都是节点编号
             **({"mechanism_events": [] if error else self.game.audit[self._audit_cursor:]}
                if self.game.mechanisms else {}),

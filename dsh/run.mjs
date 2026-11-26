@@ -150,8 +150,8 @@ function summarizeRun(options, { game, agent, calls, error, reason, stoppedAtGam
     sessionId: agent?.session.id ?? null, daysPlayed: current?.days_played ?? 0,
     actions: game?.actions ?? 0, invalidActions: game?.invalidActions ?? 0,
     calls: calls.length, summaryCalls: calls.filter(call => call.purpose === 'compaction').length,
-    windows: events.filter(event => event.type === 'user/message' && event.data.source.kind === 'context-window'
-      && event.data.source.event === 'open').length,
+    windows: events.filter(event => event.type === 'user/message' && event.data.source?.kind === 'context-window'
+      && event.data.source?.event === 'open').length,
     usage, callsWithoutUsage: calls.filter(call => call.usage === undefined).length,
     score: completed ? { overall: mean(all), perLife: lives.map(mean), rebirthEarly: mean(early), lives,
       mechanisms: current.mechanism_scores ?? {} } : null,
@@ -175,7 +175,10 @@ async function main() {
   if (values.seed !== undefined) options.seed = Number(values.seed)
   if (values.mode !== undefined) options.context = { mode: values.mode }
   const controller = new AbortController()
-  const abort = () => controller.abort(new Error('Run interrupted'))
+  const abort = () => {
+    if (controller.signal.aborted) process.exit(130)          // second Ctrl-C: stop waiting, exit now
+    controller.abort(new Error('Run interrupted'))
+  }
   process.on('SIGINT', abort).on('SIGTERM', abort)
   try {
     const result = await runEpisode(options, { signal: controller.signal })

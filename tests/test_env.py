@@ -90,7 +90,7 @@ class TestEnv(unittest.TestCase):
         env = Env(short())
         env.reset()
         p = env.name(next(iter(env.ask.stalls)))
-        for ok in [f"找{p}。", f"「找 {p}」", f"  找 {p}  "]:
+        for ok in [f"找{p}。", f"「找 {p}」", f"  找 {p}  ", f"「找 {p}。」"]:
             self.assertEqual(env._parse(ok)[1], None, ok)
         v = env.name(env.world.villages[-1])
         self.assertEqual(env._parse(f"去{v}")[1], None)
@@ -108,6 +108,7 @@ class TestEnv(unittest.TestCase):
                 obs, _, _ = env.step("我把要记的写在这里")                # 这一问回什么都行
                 self.assertIn("第 2 世", obs)
         self.assertEqual(deaths, 1)                                   # 两世之间一次；最后一世到头直接 done
+        self.assertFalse(info["life_ended"])
         self.assertEqual([len(log) for log in env.lives], [30, 30])
         self.assertRaises(RuntimeError, env.step, "不做")
 
