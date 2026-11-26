@@ -1,0 +1,42 @@
+# Part A first formal run: seed 0, ten consecutive lives, default world and mechanism rates.
+worldview = "config/worldview.toml"
+
+[world]
+size = [3, 3, 4]
+tau = 10
+ratio = 5
+mu = 0.3
+
+[game]
+lives = 10
+life = 8
+gap = 10
+seed = 0
+
+[mechanisms.rumor]
+enabled = true
+rate = 0.5
+min_delay = 0
+max_delay = 5
+all_truthful = false
+credibility_slot = "守不守信"
+
+[mechanisms.reference_orders]
+enabled = true
+rate = 0.2
+max_hops = 2
+
+[mechanisms.revisions]
+enabled = true
+rate = 0.1
+max_revisions = 2
+
+[mechanisms.prospective]
+enabled = true
+rate = 0.15
+max_pending = 2
+
+[mechanisms.distraction]
+enabled = true
+useful_ratio = 0.5
+max_per_news = 2

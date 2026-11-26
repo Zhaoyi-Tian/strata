@@ -1,0 +1,18 @@
+# Native dsh AgentLoop; endpoint and credentials are supplied by the launching environment.
+model:
+  provider: deepseek-official
+  id: deepseek-v4.1-flash-1017
+  reasoningEffort: high
+  maxOutputTokens: 8192
+context:
+  mode: full
+  notes:
+    remindAtTokens: 59392
+    checkpointAtTokens: 65536
+    forceSwitchAtTokens: 81920
+  summary:
+    compactAtTokens: 81920
+    maxOutputTokens: null
+  full:
+    stopAtTokens: null
+maxRequests: 500

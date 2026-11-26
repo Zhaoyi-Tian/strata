@@ -1,0 +1,1366 @@
+[
+  {
+    "id": 1,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 1192,
+      "outputTokens": 401,
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 0,
+      "totalTokens": 1593
+    }
+  },
+  {
+    "id": 2,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 616,
+      "outputTokens": 454,
+      "cacheReadTokens": 1152,
+      "cacheWriteTokens": 0,
+      "totalTokens": 2222
+    }
+  },
+  {
+    "id": 3,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 836,
+      "outputTokens": 107,
+      "cacheReadTokens": 1664,
+      "cacheWriteTokens": 0,
+      "totalTokens": 2607
+    }
+  },
+  {
+    "id": 4,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 438,
+      "outputTokens": 325,
+      "cacheReadTokens": 2432,
+      "cacheWriteTokens": 0,
+      "totalTokens": 3195
+    }
+  },
+  {
+    "id": 5,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 680,
+      "outputTokens": 105,
+      "cacheReadTokens": 2816,
+      "cacheWriteTokens": 0,
+      "totalTokens": 3601
+    }
+  },
+  {
+    "id": 6,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 320,
+      "outputTokens": 97,
+      "cacheReadTokens": 3456,
+      "cacheWriteTokens": 0,
+      "totalTokens": 3873
+    }
+  },
+  {
+    "id": 7,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 471,
+      "outputTokens": 747,
+      "cacheReadTokens": 3712,
+      "cacheWriteTokens": 0,
+      "totalTokens": 4930
+    }
+  },
+  {
+    "id": 8,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 1097,
+      "outputTokens": 70,
+      "cacheReadTokens": 4096,
+      "cacheWriteTokens": 0,
+      "totalTokens": 5263
+    }
+  },
+  {
+    "id": 9,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 438,
+      "outputTokens": 551,
+      "cacheReadTokens": 5120,
+      "cacheWriteTokens": 0,
+      "totalTokens": 6109
+    }
+  },
+  {
+    "id": 10,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 889,
+      "outputTokens": 160,
+      "cacheReadTokens": 5504,
+      "cacheWriteTokens": 0,
+      "totalTokens": 6553
+    }
+  },
+  {
+    "id": 11,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 588,
+      "outputTokens": 378,
+      "cacheReadTokens": 6272,
+      "cacheWriteTokens": 0,
+      "totalTokens": 7238
+    }
+  },
+  {
+    "id": 12,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 649,
+      "outputTokens": 428,
+      "cacheReadTokens": 6784,
+      "cacheWriteTokens": 0,
+      "totalTokens": 7861
+    }
+  },
+  {
+    "id": 13,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 752,
+      "outputTokens": 197,
+      "cacheReadTokens": 7424,
+      "cacheWriteTokens": 0,
+      "totalTokens": 8373
+    }
+  },
+  {
+    "id": 14,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 522,
+      "outputTokens": 143,
+      "cacheReadTokens": 8064,
+      "cacheWriteTokens": 0,
+      "totalTokens": 8729
+    }
+  },
+  {
+    "id": 15,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 510,
+      "outputTokens": 488,
+      "cacheReadTokens": 8576,
+      "cacheWriteTokens": 0,
+      "totalTokens": 9574
+    }
+  },
+  {
+    "id": 16,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 785,
+      "outputTokens": 77,
+      "cacheReadTokens": 8960,
+      "cacheWriteTokens": 0,
+      "totalTokens": 9822
+    }
+  },
+  {
+    "id": 17,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 395,
+      "outputTokens": 273,
+      "cacheReadTokens": 9728,
+      "cacheWriteTokens": 0,
+      "totalTokens": 10396
+    }
+  },
+  {
+    "id": 18,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 479,
+      "outputTokens": 56,
+      "cacheReadTokens": 10112,
+      "cacheWriteTokens": 0,
+      "totalTokens": 10647
+    }
+  },
+  {
+    "id": 19,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 210,
+      "outputTokens": 56,
+      "cacheReadTokens": 10496,
+      "cacheWriteTokens": 0,
+      "totalTokens": 10762
+    }
+  },
+  {
+    "id": 20,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 421,
+      "outputTokens": 162,
+      "cacheReadTokens": 10624,
+      "cacheWriteTokens": 0,
+      "totalTokens": 11207
+    }
+  },
+  {
+    "id": 21,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 385,
+      "outputTokens": 129,
+      "cacheReadTokens": 11008,
+      "cacheWriteTokens": 0,
+      "totalTokens": 11522
+    }
+  },
+  {
+    "id": 22,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 301,
+      "outputTokens": 163,
+      "cacheReadTokens": 11392,
+      "cacheWriteTokens": 0,
+      "totalTokens": 11856
+    }
+  },
+  {
+    "id": 23,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 244,
+      "outputTokens": 121,
+      "cacheReadTokens": 11648,
+      "cacheWriteTokens": 0,
+      "totalTokens": 12013
+    }
+  },
+  {
+    "id": 24,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 539,
+      "outputTokens": 852,
+      "cacheReadTokens": 11776,
+      "cacheWriteTokens": 0,
+      "totalTokens": 13167
+    }
+  },
+  {
+    "id": 25,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 1104,
+      "outputTokens": 115,
+      "cacheReadTokens": 12288,
+      "cacheWriteTokens": 0,
+      "totalTokens": 13507
+    }
+  },
+  {
+    "id": 26,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 470,
+      "outputTokens": 143,
+      "cacheReadTokens": 13312,
+      "cacheWriteTokens": 0,
+      "totalTokens": 13925
+    }
+  },
+  {
+    "id": 27,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 446,
+      "outputTokens": 257,
+      "cacheReadTokens": 13696,
+      "cacheWriteTokens": 0,
+      "totalTokens": 14399
+    }
+  },
+  {
+    "id": 28,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 695,
+      "outputTokens": 212,
+      "cacheReadTokens": 14080,
+      "cacheWriteTokens": 0,
+      "totalTokens": 14987
+    }
+  },
+  {
+    "id": 29,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 480,
+      "outputTokens": 492,
+      "cacheReadTokens": 14720,
+      "cacheWriteTokens": 0,
+      "totalTokens": 15692
+    }
+  },
+  {
+    "id": 30,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 883,
+      "outputTokens": 131,
+      "cacheReadTokens": 15104,
+      "cacheWriteTokens": 0,
+      "totalTokens": 16118
+    }
+  },
+  {
+    "id": 31,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 528,
+      "outputTokens": 106,
+      "cacheReadTokens": 15872,
+      "cacheWriteTokens": 0,
+      "totalTokens": 16506
+    }
+  },
+  {
+    "id": 32,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 308,
+      "outputTokens": 78,
+      "cacheReadTokens": 16384,
+      "cacheWriteTokens": 0,
+      "totalTokens": 16770
+    }
+  },
+  {
+    "id": 33,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 421,
+      "outputTokens": 138,
+      "cacheReadTokens": 16640,
+      "cacheWriteTokens": 0,
+      "totalTokens": 17199
+    }
+  },
+  {
+    "id": 34,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 383,
+      "outputTokens": 110,
+      "cacheReadTokens": 17024,
+      "cacheWriteTokens": 0,
+      "totalTokens": 17517
+    }
+  },
+  {
+    "id": 35,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 544,
+      "outputTokens": 118,
+      "cacheReadTokens": 17280,
+      "cacheWriteTokens": 0,
+      "totalTokens": 17942
+    }
+  },
+  {
+    "id": 36,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 360,
+      "outputTokens": 61,
+      "cacheReadTokens": 17792,
+      "cacheWriteTokens": 0,
+      "totalTokens": 18213
+    }
+  },
+  {
+    "id": 37,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 444,
+      "outputTokens": 162,
+      "cacheReadTokens": 18048,
+      "cacheWriteTokens": 0,
+      "totalTokens": 18654
+    }
+  },
+  {
+    "id": 38,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 412,
+      "outputTokens": 620,
+      "cacheReadTokens": 18432,
+      "cacheWriteTokens": 0,
+      "totalTokens": 19464
+    }
+  },
+  {
+    "id": 39,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 985,
+      "outputTokens": 121,
+      "cacheReadTokens": 18816,
+      "cacheWriteTokens": 0,
+      "totalTokens": 19922
+    }
+  },
+  {
+    "id": 40,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 398,
+      "outputTokens": 162,
+      "cacheReadTokens": 19712,
+      "cacheWriteTokens": 0,
+      "totalTokens": 20272
+    }
+  },
+  {
+    "id": 41,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 475,
+      "outputTokens": 68,
+      "cacheReadTokens": 20096,
+      "cacheWriteTokens": 0,
+      "totalTokens": 20639
+    }
+  },
+  {
+    "id": 42,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 499,
+      "outputTokens": 827,
+      "cacheReadTokens": 20480,
+      "cacheWriteTokens": 0,
+      "totalTokens": 21806
+    }
+  },
+  {
+    "id": 43,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 1159,
+      "outputTokens": 67,
+      "cacheReadTokens": 20864,
+      "cacheWriteTokens": 0,
+      "totalTokens": 22090
+    }
+  },
+  {
+    "id": 44,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 385,
+      "outputTokens": 170,
+      "cacheReadTokens": 22016,
+      "cacheWriteTokens": 0,
+      "totalTokens": 22571
+    }
+  },
+  {
+    "id": 45,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 357,
+      "outputTokens": 74,
+      "cacheReadTokens": 22400,
+      "cacheWriteTokens": 0,
+      "totalTokens": 22831
+    }
+  },
+  {
+    "id": 46,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 233,
+      "outputTokens": 275,
+      "cacheReadTokens": 22656,
+      "cacheWriteTokens": 0,
+      "totalTokens": 23164
+    }
+  },
+  {
+    "id": 47,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 696,
+      "outputTokens": 131,
+      "cacheReadTokens": 22784,
+      "cacheWriteTokens": 0,
+      "totalTokens": 23611
+    }
+  },
+  {
+    "id": 48,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 395,
+      "outputTokens": 61,
+      "cacheReadTokens": 23424,
+      "cacheWriteTokens": 0,
+      "totalTokens": 23880
+    }
+  },
+  {
+    "id": 49,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 383,
+      "outputTokens": 143,
+      "cacheReadTokens": 23808,
+      "cacheWriteTokens": 0,
+      "totalTokens": 24334
+    }
+  },
+  {
+    "id": 50,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 456,
+      "outputTokens": 78,
+      "cacheReadTokens": 24064,
+      "cacheWriteTokens": 0,
+      "totalTokens": 24598
+    }
+  },
+  {
+    "id": 51,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 418,
+      "outputTokens": 226,
+      "cacheReadTokens": 24448,
+      "cacheWriteTokens": 0,
+      "totalTokens": 25092
+    }
+  },
+  {
+    "id": 52,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 582,
+      "outputTokens": 111,
+      "cacheReadTokens": 24832,
+      "cacheWriteTokens": 0,
+      "totalTokens": 25525
+    }
+  },
+  {
+    "id": 53,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 369,
+      "outputTokens": 78,
+      "cacheReadTokens": 25344,
+      "cacheWriteTokens": 0,
+      "totalTokens": 25791
+    }
+  },
+  {
+    "id": 54,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 494,
+      "outputTokens": 348,
+      "cacheReadTokens": 25600,
+      "cacheWriteTokens": 0,
+      "totalTokens": 26442
+    }
+  },
+  {
+    "id": 55,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 630,
+      "outputTokens": 67,
+      "cacheReadTokens": 25984,
+      "cacheWriteTokens": 0,
+      "totalTokens": 26681
+    }
+  },
+  {
+    "id": 56,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 450,
+      "outputTokens": 67,
+      "cacheReadTokens": 26496,
+      "cacheWriteTokens": 0,
+      "totalTokens": 27013
+    }
+  },
+  {
+    "id": 57,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 402,
+      "outputTokens": 128,
+      "cacheReadTokens": 26880,
+      "cacheWriteTokens": 0,
+      "totalTokens": 27410
+    }
+  },
+  {
+    "id": 58,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 318,
+      "outputTokens": 53,
+      "cacheReadTokens": 27264,
+      "cacheWriteTokens": 0,
+      "totalTokens": 27635
+    }
+  },
+  {
+    "id": 59,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 405,
+      "outputTokens": 147,
+      "cacheReadTokens": 27520,
+      "cacheWriteTokens": 0,
+      "totalTokens": 28072
+    }
+  },
+  {
+    "id": 60,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 381,
+      "outputTokens": 57,
+      "cacheReadTokens": 27904,
+      "cacheWriteTokens": 0,
+      "totalTokens": 28342
+    }
+  },
+  {
+    "id": 61,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 490,
+      "outputTokens": 155,
+      "cacheReadTokens": 28160,
+      "cacheWriteTokens": 0,
+      "totalTokens": 28805
+    }
+  },
+  {
+    "id": 62,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 567,
+      "outputTokens": 223,
+      "cacheReadTokens": 28544,
+      "cacheWriteTokens": 0,
+      "totalTokens": 29334
+    }
+  },
+  {
+    "id": 63,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 453,
+      "outputTokens": 65,
+      "cacheReadTokens": 29056,
+      "cacheWriteTokens": 0,
+      "totalTokens": 29574
+    }
+  },
+  {
+    "id": 64,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 458,
+      "outputTokens": 132,
+      "cacheReadTokens": 29440,
+      "cacheWriteTokens": 0,
+      "totalTokens": 30030
+    }
+  },
+  {
+    "id": 65,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 480,
+      "outputTokens": 195,
+      "cacheReadTokens": 29824,
+      "cacheWriteTokens": 0,
+      "totalTokens": 30499
+    }
+  },
+  {
+    "id": 66,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 565,
+      "outputTokens": 183,
+      "cacheReadTokens": 30208,
+      "cacheWriteTokens": 0,
+      "totalTokens": 30956
+    }
+  },
+  {
+    "id": 67,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 426,
+      "outputTokens": 348,
+      "cacheReadTokens": 30720,
+      "cacheWriteTokens": 0,
+      "totalTokens": 31494
+    }
+  },
+  {
+    "id": 68,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 449,
+      "outputTokens": 76,
+      "cacheReadTokens": 31104,
+      "cacheWriteTokens": 0,
+      "totalTokens": 31629
+    }
+  },
+  {
+    "id": 69,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 413,
+      "outputTokens": 338,
+      "cacheReadTokens": 31488,
+      "cacheWriteTokens": 0,
+      "totalTokens": 32239
+    }
+  },
+  {
+    "id": 70,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 559,
+      "outputTokens": 58,
+      "cacheReadTokens": 31872,
+      "cacheWriteTokens": 0,
+      "totalTokens": 32489
+    }
+  },
+  {
+    "id": 71,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 437,
+      "outputTokens": 157,
+      "cacheReadTokens": 32384,
+      "cacheWriteTokens": 0,
+      "totalTokens": 32978
+    }
+  },
+  {
+    "id": 72,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 416,
+      "outputTokens": 72,
+      "cacheReadTokens": 32768,
+      "cacheWriteTokens": 0,
+      "totalTokens": 33256
+    }
+  },
+  {
+    "id": 73,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 379,
+      "outputTokens": 80,
+      "cacheReadTokens": 33152,
+      "cacheWriteTokens": 0,
+      "totalTokens": 33611
+    }
+  },
+  {
+    "id": 74,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 506,
+      "outputTokens": 182,
+      "cacheReadTokens": 33408,
+      "cacheWriteTokens": 0,
+      "totalTokens": 34096
+    }
+  },
+  {
+    "id": 75,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 494,
+      "outputTokens": 68,
+      "cacheReadTokens": 33792,
+      "cacheWriteTokens": 0,
+      "totalTokens": 34354
+    }
+  },
+  {
+    "id": 76,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 538,
+      "outputTokens": 639,
+      "cacheReadTokens": 34176,
+      "cacheWriteTokens": 0,
+      "totalTokens": 35353
+    }
+  },
+  {
+    "id": 77,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 855,
+      "outputTokens": 65,
+      "cacheReadTokens": 34688,
+      "cacheWriteTokens": 0,
+      "totalTokens": 35608
+    }
+  },
+  {
+    "id": 78,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 211,
+      "outputTokens": 65,
+      "cacheReadTokens": 35456,
+      "cacheWriteTokens": 0,
+      "totalTokens": 35732
+    }
+  },
+  {
+    "id": 79,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 450,
+      "outputTokens": 182,
+      "cacheReadTokens": 35584,
+      "cacheWriteTokens": 0,
+      "totalTokens": 36216
+    }
+  },
+  {
+    "id": 80,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 543,
+      "outputTokens": 151,
+      "cacheReadTokens": 35968,
+      "cacheWriteTokens": 0,
+      "totalTokens": 36662
+    }
+  },
+  {
+    "id": 81,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 386,
+      "outputTokens": 59,
+      "cacheReadTokens": 36480,
+      "cacheWriteTokens": 0,
+      "totalTokens": 36925
+    }
+  },
+  {
+    "id": 82,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 120,
+      "outputTokens": 52,
+      "cacheReadTokens": 36864,
+      "cacheWriteTokens": 0,
+      "totalTokens": 37036
+    }
+  },
+  {
+    "id": 83,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 466,
+      "outputTokens": 79,
+      "cacheReadTokens": 36864,
+      "cacheWriteTokens": 0,
+      "totalTokens": 37409
+    }
+  },
+  {
+    "id": 84,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 484,
+      "outputTokens": 66,
+      "cacheReadTokens": 37248,
+      "cacheWriteTokens": 0,
+      "totalTokens": 37798
+    }
+  },
+  {
+    "id": 85,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 496,
+      "outputTokens": 185,
+      "cacheReadTokens": 37632,
+      "cacheWriteTokens": 0,
+      "totalTokens": 38313
+    }
+  },
+  {
+    "id": 86,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 509,
+      "outputTokens": 53,
+      "cacheReadTokens": 38016,
+      "cacheWriteTokens": 0,
+      "totalTokens": 38578
+    }
+  },
+  {
+    "id": 87,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 491,
+      "outputTokens": 159,
+      "cacheReadTokens": 38400,
+      "cacheWriteTokens": 0,
+      "totalTokens": 39050
+    }
+  },
+  {
+    "id": 88,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 441,
+      "outputTokens": 63,
+      "cacheReadTokens": 38784,
+      "cacheWriteTokens": 0,
+      "totalTokens": 39288
+    }
+  },
+  {
+    "id": 89,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 471,
+      "outputTokens": 204,
+      "cacheReadTokens": 39168,
+      "cacheWriteTokens": 0,
+      "totalTokens": 39843
+    }
+  },
+  {
+    "id": 90,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 566,
+      "outputTokens": 64,
+      "cacheReadTokens": 39552,
+      "cacheWriteTokens": 0,
+      "totalTokens": 40182
+    }
+  },
+  {
+    "id": 91,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 477,
+      "outputTokens": 191,
+      "cacheReadTokens": 40064,
+      "cacheWriteTokens": 0,
+      "totalTokens": 40732
+    }
+  },
+  {
+    "id": 92,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 458,
+      "outputTokens": 145,
+      "cacheReadTokens": 40448,
+      "cacheWriteTokens": 0,
+      "totalTokens": 41051
+    }
+  },
+  {
+    "id": 93,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 255,
+      "outputTokens": 198,
+      "cacheReadTokens": 40832,
+      "cacheWriteTokens": 0,
+      "totalTokens": 41285
+    }
+  },
+  {
+    "id": 94,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 655,
+      "outputTokens": 132,
+      "cacheReadTokens": 40960,
+      "cacheWriteTokens": 0,
+      "totalTokens": 41747
+    }
+  },
+  {
+    "id": 95,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 360,
+      "outputTokens": 52,
+      "cacheReadTokens": 41600,
+      "cacheWriteTokens": 0,
+      "totalTokens": 42012
+    }
+  },
+  {
+    "id": 96,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 435,
+      "outputTokens": 123,
+      "cacheReadTokens": 41856,
+      "cacheWriteTokens": 0,
+      "totalTokens": 42414
+    }
+  },
+  {
+    "id": 97,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 360,
+      "outputTokens": 127,
+      "cacheReadTokens": 42240,
+      "cacheWriteTokens": 0,
+      "totalTokens": 42727
+    }
+  },
+  {
+    "id": 98,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 552,
+      "outputTokens": 105,
+      "cacheReadTokens": 42496,
+      "cacheWriteTokens": 0,
+      "totalTokens": 43153
+    }
+  },
+  {
+    "id": 99,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 357,
+      "outputTokens": 47,
+      "cacheReadTokens": 43008,
+      "cacheWriteTokens": 0,
+      "totalTokens": 43412
+    }
+  },
+  {
+    "id": 100,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 458,
+      "outputTokens": 97,
+      "cacheReadTokens": 43264,
+      "cacheWriteTokens": 0,
+      "totalTokens": 43819
+    }
+  },
+  {
+    "id": 101,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 355,
+      "outputTokens": 73,
+      "cacheReadTokens": 43648,
+      "cacheWriteTokens": 0,
+      "totalTokens": 44076
+    }
+  },
+  {
+    "id": 102,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 487,
+      "outputTokens": 130,
+      "cacheReadTokens": 43904,
+      "cacheWriteTokens": 0,
+      "totalTokens": 44521
+    }
+  },
+  {
+    "id": 103,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 419,
+      "outputTokens": 103,
+      "cacheReadTokens": 44288,
+      "cacheWriteTokens": 0,
+      "totalTokens": 44810
+    }
+  },
+  {
+    "id": 104,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 440,
+      "outputTokens": 115,
+      "cacheReadTokens": 44672,
+      "cacheWriteTokens": 0,
+      "totalTokens": 45227
+    }
+  },
+  {
+    "id": 105,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 355,
+      "outputTokens": 67,
+      "cacheReadTokens": 45056,
+      "cacheWriteTokens": 0,
+      "totalTokens": 45478
+    }
+  },
+  {
+    "id": 106,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 493,
+      "outputTokens": 179,
+      "cacheReadTokens": 45312,
+      "cacheWriteTokens": 0,
+      "totalTokens": 45984
+    }
+  },
+  {
+    "id": 107,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 494,
+      "outputTokens": 70,
+      "cacheReadTokens": 45696,
+      "cacheWriteTokens": 0,
+      "totalTokens": 46260
+    }
+  },
+  {
+    "id": 108,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 239,
+      "outputTokens": 60,
+      "cacheReadTokens": 46080,
+      "cacheWriteTokens": 0,
+      "totalTokens": 46379
+    }
+  },
+  {
+    "id": 109,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 469,
+      "outputTokens": 99,
+      "cacheReadTokens": 46208,
+      "cacheWriteTokens": 0,
+      "totalTokens": 46776
+    }
+  },
+  {
+    "id": 110,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 372,
+      "outputTokens": 71,
+      "cacheReadTokens": 46592,
+      "cacheWriteTokens": 0,
+      "totalTokens": 47035
+    }
+  },
+  {
+    "id": 111,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 513,
+      "outputTokens": 76,
+      "cacheReadTokens": 46848,
+      "cacheWriteTokens": 0,
+      "totalTokens": 47437
+    }
+  },
+  {
+    "id": 112,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 383,
+      "outputTokens": 182,
+      "cacheReadTokens": 47360,
+      "cacheWriteTokens": 0,
+      "totalTokens": 47925
+    }
+  },
+  {
+    "id": 113,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 499,
+      "outputTokens": 165,
+      "cacheReadTokens": 47616,
+      "cacheWriteTokens": 0,
+      "totalTokens": 48280
+    }
+  },
+  {
+    "id": 114,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 574,
+      "outputTokens": 102,
+      "cacheReadTokens": 48000,
+      "cacheWriteTokens": 0,
+      "totalTokens": 48676
+    }
+  },
+  {
+    "id": 115,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 352,
+      "outputTokens": 49,
+      "cacheReadTokens": 48512,
+      "cacheWriteTokens": 0,
+      "totalTokens": 48913
+    }
+  },
+  {
+    "id": 116,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 545,
+      "outputTokens": 213,
+      "cacheReadTokens": 48768,
+      "cacheWriteTokens": 0,
+      "totalTokens": 49526
+    }
+  },
+  {
+    "id": 117,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 456,
+      "outputTokens": 61,
+      "cacheReadTokens": 49280,
+      "cacheWriteTokens": 0,
+      "totalTokens": 49797
+    }
+  },
+  {
+    "id": 118,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 408,
+      "outputTokens": 130,
+      "cacheReadTokens": 49664,
+      "cacheWriteTokens": 0,
+      "totalTokens": 50202
+    }
+  },
+  {
+    "id": 119,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 344,
+      "outputTokens": 126,
+      "cacheReadTokens": 50048,
+      "cacheWriteTokens": 0,
+      "totalTokens": 50518
+    }
+  },
+  {
+    "id": 120,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 550,
+      "outputTokens": 58,
+      "cacheReadTokens": 50304,
+      "cacheWriteTokens": 0,
+      "totalTokens": 50912
+    }
+  },
+  {
+    "id": 121,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 399,
+      "outputTokens": 90,
+      "cacheReadTokens": 50816,
+      "cacheWriteTokens": 0,
+      "totalTokens": 51305
+    }
+  },
+  {
+    "id": 122,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 413,
+      "outputTokens": 81,
+      "cacheReadTokens": 51200,
+      "cacheWriteTokens": 0,
+      "totalTokens": 51694
+    }
+  },
+  {
+    "id": 123,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 406,
+      "outputTokens": 130,
+      "cacheReadTokens": 51584,
+      "cacheWriteTokens": 0,
+      "totalTokens": 52120
+    }
+  },
+  {
+    "id": 124,
+    "purpose": "task",
+    "usage": {
+      "inputTokens": 362,
+      "outputTokens": 61,
+      "cacheReadTokens": 51968,
+      "cacheWriteTokens": 0,
+      "totalTokens": 52391
+    }
+  }
+]
