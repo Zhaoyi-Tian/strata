@@ -97,10 +97,11 @@ class Env:
         if error:
             return f"{error}\n{PROMPT[kind]}", False, self._info(action, kind, error)
         self._lines, self._events = [], []
+        order, version = self.game.order, self.game.order.version
         for a in answers:                                       # 「找 X」在「今天怎么办」时 = 留下 + 找 X
             self.game.step(a)
-            if self.game.decision_interrupted:
-                break  # 新口信先给玩家看，不能用旧答案购买。
+            if self.game.order is order and order.version != version:
+                break                                           # 东家改了口：新口信先给玩家看，不能用旧答案购买
         return self._obs(), self.done, self._info(action, kind)
 
     def legal_actions(self) -> list[str]:

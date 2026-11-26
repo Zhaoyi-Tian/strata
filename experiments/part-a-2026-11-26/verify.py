@@ -1,6 +1,8 @@
 """Recompute the published Part A results from recorded actions, without model calls.
 
-Run from an installed Strata checkout: uv run python experiments/part-a-2026-11-26/verify.py
+Run on the code that produced it (tag part-a-v1); later versions changed Part A and the private state:
+    git worktree add ../strata-v1 part-a-v1 && cd ../strata-v1
+    uv run python experiments/part-a-2026-11-26/verify.py
 The trajectory contains public feedback and hashes of the original private state;
 the current Game/Env reconstructs that state during replay.
 """

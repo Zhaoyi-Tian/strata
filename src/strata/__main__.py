@@ -7,6 +7,7 @@ import argparse
 from . import term
 from .config import load
 from .game import Game
+from .mechanisms import configured
 from .view import View
 
 
@@ -19,7 +20,10 @@ class Player:
     def place(self, v) -> tuple[str, str]:
         return self.view.name(v), self.view.name(self.world.parent[v])
 
-    def go(self, day, here, want, stalls):
+    def act(self, ask):
+        return self.go(ask.here) if ask.kind == "go" else self.choose(ask.want, ask.stalls) if ask.kind == "choose" else None
+
+    def go(self, here):
         near = sorted(self.world.villages, key=lambda v: (v != here, self.world.distance(here, v), v))
         options = []
         for v in near:
@@ -29,7 +33,7 @@ class Player:
             options.append(f"{name}  {term.paint(region + ' · ' + cost, 'dim')}")
         return near[term.menu("去哪", options)]
 
-    def choose(self, day, want, stalls):
+    def choose(self, want, stalls):
         people = list(stalls)
         options = [f"{self.view.name(p)}  " + "、".join(term.paint(v, "want") if want[s] == v else v
                                                                  for s, v in stalls[p].items()) for p in people]
@@ -69,7 +73,11 @@ def main():
     cfg = load(a.config)
     if a.seed is not None:
         cfg["game"]["seed"] = a.seed
-    if any(m.get("enabled", False) for m in cfg.get("mechanisms", {}).values()):
+    try:
+        mechanisms = configured(cfg)
+    except ValueError as error:
+        ap.error(str(error))
+    if mechanisms:
         from .env import Env, interactive
         interactive(Env(cfg))
         return

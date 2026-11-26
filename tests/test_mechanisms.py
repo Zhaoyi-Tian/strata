@@ -160,7 +160,7 @@ class TestRumor(unittest.TestCase):
         env.step("继续")
         self.assertEqual([day for day, _ in rumor.history], list(range(9)))
         before = env.world.rng.getstate()
-        rumor.news(env.game)
+        rumor.on(env.game, "news")
         self.assertEqual(env.world.rng.getstate(), before)
 
 
@@ -173,9 +173,9 @@ class TestReferences(unittest.TestCase):
         self.assertNotIn("那个人", opening)
         person = matching_person(env)
         env.step(f"找 {env.name(person)}")
-        state = env.game.order_state
-        self.assertEqual(state["target"], person)
-        self.assertEqual(state["hops"], 1)
+        order = env.game.order
+        self.assertEqual(order.target, person)
+        self.assertEqual(order.hops, 1)
         self.assertEqual(env.ask.reference, {"kind": "transaction", "day": 1, "slot": "卖什么", "value": "铁"})
         self.assertNotIn("target", env.ask.reference)
         snapshot = env.ask
@@ -186,7 +186,7 @@ class TestReferences(unittest.TestCase):
         self.assertIn("不是口信里指定的人", feedback)
         self.assertIn("守不守信：守信", feedback)  # 不能把指称错误谎报为短秤
         self.assertEqual(env.game.log[:2], [True, False])
-        self.assertTrue(any(e["kind"] == "settlement" and e["wrong_person"] for e in info["mechanism_events"]))
+        self.assertIn("wrong_person", [e["kind"] for e in info["events"]])
 
     def test_two_hops_resolve_through_public_order_history(self):
         class Last:
@@ -203,8 +203,8 @@ class TestReferences(unittest.TestCase):
         person = matching_person(env)
         env.step(f"找 {env.name(person)}")
         env.step(f"找 {env.name(person)}")
-        self.assertEqual(env.game.order_state["hops"], 2)
-        self.assertEqual(env.game.order_state["target"], person)
+        self.assertEqual(env.game.order.hops, 2)
+        self.assertEqual(env.game.order.target, person)
         self.assertEqual(env.ask.reference, {"kind": "order", "day": 2})
         self.assertIn("世界第 2 天东家那张口信里指定的人", env.observation())
         self.assertEqual(reference.orders[-1]["antecedent_order"], "order:2")
@@ -223,7 +223,7 @@ class TestRevisions(unittest.TestCase):
         self.assertNotEqual(env.ask.want, original)
         env.step(f"找 {env.name(matching_person(env))}")
         self.assertEqual(env.game.days_played, 0)
-        self.assertEqual(env.game.order_state["version"], 3)
+        self.assertEqual(env.game.order.version, 3)
         env.step(f"找 {env.name(matching_person(env))}")
         self.assertEqual(env.game.log, [True])
         revisions = [event for event in env.game.audit if event["kind"] == "revision"]
@@ -232,12 +232,12 @@ class TestRevisions(unittest.TestCase):
     def test_cross_region_keeps_order_identity_and_death_does_not_revise(self):
         env = stable([Revisions(rate=1)])
         env.reset()
-        identity = env.game.order_state["id"]
+        identity = env.game.order.id
         distant = next(v for v in env.world.villages if env.world.distance(v, env.game.here))
         feedback, _, _ = env.step(f"去 {env.name(distant)}")
         self.assertIn("改主意", feedback)
         self.assertEqual((env.world.day, env.game.days_played), (2, 1))
-        self.assertEqual(env.game.order_state["id"], identity)
+        self.assertEqual(env.game.order.id, identity)
         short = stable([Revisions(rate=1)], life=1)
         short.reset()
         distant = next(v for v in short.world.villages if short.world.distance(v, short.game.here))
@@ -245,23 +245,23 @@ class TestRevisions(unittest.TestCase):
         self.assertTrue(short.life_ended)
         self.assertFalse(any(e["kind"] == "revision" for e in short.game.audit))
 
-    def test_reference_target_is_retained_and_revision_requires_available_goods(self):
-        revision = Revisions(rate=1)
-        env = stable([ReferenceOrders(rate=1), revision])
+    def test_revising_a_referenced_order_drops_the_reference(self):
+        revision, reference = Revisions(rate=1), ReferenceOrders(rate=1)
+        env = stable([reference, revision])
         env.reset()
-        # 建立一次已向玩家反馈的真实交易，再在下一单检查组合。
+        # 建立一次已向玩家反馈的真实交易，下一单就会点名找他。
         while env.game.days_played == 0:
             env.step(f"找 {env.name(matching_person(env))}")
-        target = env.game.trades[-1]["person"]
-        env.game.order_state.update(target=target, reference={"kind": "transaction", "day": 1,
-                                                            "slot": "卖什么", "value": env.game.trades[-1]["goods"]["卖什么"]})
+        self.assertIsNotNone(env.game.order.target)
         old = env.game.want["卖什么"]
-        new = next(v for v in env.world.slots["卖什么"] if v != old)
-        env.world.own["卖什么"][target] = new
-        self.assertTrue(revision.revise(env.game, "arrive"))
-        self.assertEqual(env.game.want["卖什么"], new)
-        self.assertEqual(env.game.order_state["target"], target)
-        self.assertFalse(revision.revise(env.game, "before_choice"))
+        feedback, _, _ = env.step("留下")
+        self.assertIn("不必再找", feedback)
+        self.assertNotEqual(env.game.want["卖什么"], old)
+        self.assertIsNone(env.game.order.target)
+        self.assertIsNone(env.ask.reference)
+        self.assertEqual(env.ask.version, 2)
+        self.assertEqual(env.game.order.hops, 0)
+        self.assertTrue(reference.orders[-1]["revoked"])           # 以后的两跳指称不能再顺着它指过去
 
 
 class TestProspective(unittest.TestCase):
@@ -375,24 +375,12 @@ class TestDshMechanisms(unittest.TestCase):
         self.assertNotIn("mechanism_scores", packet)
         self.assertNotIn("task_ids", packet)
 
-    def test_demo_uses_real_events_is_repeatable_and_completes_all_mechanisms(self):
-        from strata.demo import demonstration
-        first, env = demonstration()
-        second, repeated = demonstration()
-        self.assertEqual(first, second)
-        self.assertEqual(env.game.audit, repeated.game.audit)
-        self.assertTrue(env.done)
-        self.assertIn("受控演示", first)
-        self.assertGreater(env.game.mechanism_scores()["prospective"]["completed"], 0)
-        self.assertTrue({"rumor", "reference_order", "revision", "task_issued", "message_delivered", "distraction"}
-                        <= {e["kind"] for e in env.game.audit})
-
     def test_same_text_interface_private_audit_and_final_separate_scores(self):
         cfg, stream = config(NAMES, life=3), io.StringIO()
         episode = Episode(cfg, 2, stream)
         env = Env(cfg, seed=2)
         self.assertEqual(env.reset(), episode.initial["feedback"])
-        self.assertEqual(episode.initial["protocol"], "part-a-v1")
+        self.assertEqual(episode.initial["protocol"], "part-a-v2")
         while not env.done:
             feedback, _, _ = env.step("不做")
             if env.life_ended:

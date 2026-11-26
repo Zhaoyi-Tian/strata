@@ -15,10 +15,10 @@ class ReferenceOrders(Mechanism):
     def reset(self, game):
         self.orders = []
 
-    def order(self, game, want):
-        rng = self.rng(game, game.world.day, "order")
+    def order(self, game):
+        rng, want = self.rng(game, game.world.day, "order"), game.want
         if rng.random() >= self.rate or not game.visible:
-            return want
+            return
         w, slot = game.world, game.visible[0]
 
         def fits(person):
@@ -32,16 +32,21 @@ class ReferenceOrders(Mechanism):
         candidates += [
             {"target": o["target"], "hops": o["hops"] + 1,
              "public": {"kind": "order", "day": o["day"]}, "antecedent_order": o["id"]}
-            for o in self.orders if o["hops"] < self.max_hops and fits(o["target"])
+            for o in self.orders if o["hops"] < self.max_hops and not o.get("revoked") and fits(o["target"])
         ]
         if not candidates:
-            return want
+            return
         chosen = deepcopy(rng.choice(candidates))
-        game.order_state.update(target=chosen["target"], reference=chosen["public"], hops=chosen["hops"])
-        entry = {"id": game.order_state["id"], "day": w.day, **chosen}
+        game.order.target, game.order.reference, game.order.hops = chosen["target"], chosen["public"], chosen["hops"]
+        entry = {"id": game.order.id, "day": w.day, **chosen}
         self.orders.append(entry)
         game.record("reference_order", **entry)
-        return want
+
+    def on(self, game, kind, **kw):
+        if kind == "revision_unref":                       # 东家说了不必再找那人，以后也不能再顺着这单指过去
+            for entry in self.orders:
+                if entry["id"] == game.order.id:
+                    entry["revoked"] = True
 
     def snapshot(self):
         return {"count": len(self.orders), "last": deepcopy(self.orders[-1]) if self.orders else None}

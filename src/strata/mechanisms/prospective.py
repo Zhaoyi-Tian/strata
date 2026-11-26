@@ -21,6 +21,14 @@ class Prospective(Mechanism):
     def reset(self, game):
         self.tasks, self.attempts = [], []
 
+    def on(self, game, kind, **kw):
+        if kind == "news":
+            self.news(game)
+        elif kind in ("arrive", "life_start"):
+            self.arrive(game)
+        elif kind in ("settled", "depart"):
+            self.close_windows(game)
+
     def news(self, game):
         rng, w = self.rng(game, game.world.day, "news"), game.world
         if sum(t["status"] in ("pending", "open") for t in self.tasks) >= self.max_pending or rng.random() >= self.rate:
@@ -42,8 +50,7 @@ class Prospective(Mechanism):
                 "status": "pending", "opportunity_day": None}
         self.tasks.append(task)
         game.record("task_issued", **task)
-        game.say("commission", speaker=speaker, person=recipient, village=task["village"], message=message)
-        game.useful_news += 1
+        game.emit("commission", speaker=speaker, person=recipient, village=task["village"], message=message)
         return task
 
     def arrive(self, game):
@@ -51,9 +58,6 @@ class Prospective(Mechanism):
             if task["status"] == "pending" and task["village"] == game.here:
                 task.update(status="open", opportunity_day=game.world.day)
                 game.record("task_opportunity", task_id=task["id"], village=game.here)
-
-    def life_start(self, game):
-        self.arrive(game)
 
     def deliver(self, game, person, message):
         matching = [t for t in self.tasks if t["status"] == "open" and t["recipient"] == person
@@ -68,13 +72,7 @@ class Prospective(Mechanism):
         self.attempts.append(attempt)
         game.record("message_delivered", **attempt)
         # 所有有效传话反馈一致，不能拿 NPC 当口信答案探测器。
-        game.say("message_delivered", person=person)
-
-    def settled(self, game, outcome, person):
-        self.close_windows(game)
-
-    def depart(self, game):
-        self.close_windows(game)
+        game.emit("message_delivered", person=person)
 
     def close_windows(self, game):
         for task in self.tasks:

@@ -139,7 +139,7 @@ for (const mode of ['full', 'summary', 'notes']) {
         assert.equal(textOf({ messages: startup }).split(initial.feedback).length - 1, 1,
           'the first request contains the complete opening feedback exactly once')
         for (const request of requests) {
-          for (const privateField of ['source_layer', 'mechanism_events', 'task_ids', 'fabricated', 'mechanism_config', 'part-a-v1']) {
+          for (const privateField of ['source_layer', 'mechanism_events', 'task_ids', 'fabricated', 'mechanism_config', 'part-a-v2']) {
             assert.ok(!JSON.stringify(request).includes(privateField), `${privateField} stays out of model input`)
           }
           const dynamic = request.request.messages.filter(message => message.source?.kind === 'runtime-context')

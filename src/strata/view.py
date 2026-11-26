@@ -33,10 +33,6 @@ class View:
         if kind == "stalls":
             return "，".join(self.lines["stall"].format(person=self.name(p), **seen)
                             for p, seen in kw["stalls"].items()) + "。"
-        if kind == "rumor":
-            kw["claim"] = self.claims.get(kw["slot"], "在‘{slot}’这件事上是{value}").format(**kw)
-        if kind == "revision" and kw["reference"] is None:
-            kind = "revision_open"
         if "reference" in kw:
             kw["reference"] = self.reference(kw["reference"]) if kw["reference"] else "任一符合要求的人"
         if "want" in kw:
@@ -49,6 +45,8 @@ class View:
         for k in ("village", "person", "speaker"):
             if k in kw:
                 kw[k] = self.name(kw[k])
+        if kind == "rumor":                                    # 名字换好之后再套，模板里也能用 {person}
+            kw["claim"] = self.claims.get(kw["slot"], "在‘{slot}’这件事上是{value}").format(**kw)
         return self.lines[kind].format(**kw)
 
     def reference(self, reference):
