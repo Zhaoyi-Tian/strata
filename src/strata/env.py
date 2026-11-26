@@ -21,7 +21,8 @@ import argparse
 import re
 
 from .config import load
-from .game import Ask, Game
+from .game import Ask, DeliverMessage, Game
+from .mechanisms.prospective import normalize
 from .view import View
 
 LAYERS = ("地区", "村", "人")
@@ -43,13 +44,13 @@ _ACTION = re.compile(r"(找|去)\s*(\S+)|留下|不做")
 
 
 class Env:
-    def __init__(self, cfg: dict | None = None, seed: int | None = None, mechanisms=()):
+    def __init__(self, cfg: dict | None = None, seed: int | None = None, mechanisms=None):
         """cfg 是 strata.load() 读出来的配置；seed 不给就用配置里的。mechanisms 见 strata.mechanisms。
         一个 Env 玩一局；再调 reset() 会从头再来（同一个 seed，同一个世界）。"""
         cfg = cfg or load()
         if seed is not None:
             cfg = {**cfg, "game": {**cfg["game"], "seed": seed}}
-        self.cfg, self.mechanisms = cfg, list(mechanisms)
+        self.cfg, self.mechanisms = cfg, None if mechanisms is None else list(mechanisms)
         self._build()
 
     def _build(self):
@@ -58,6 +59,7 @@ class Env:
         w = self.game.world
         self._village_by_name = {self.name(v): v for v in w.villages}
         self._lines, self._events = [], []
+        self._audit_cursor = 0
 
     # ---- 给 agent 的 ----
 
@@ -67,13 +69,18 @@ class Env:
         g = self.cfg["game"]
         scoring = (f"一局 {g['lives']} 世，每世 {g['life']} 天，死后空转 {g['gap']} 天。"
                    "目标是让整局的每天成单率尽可能高；路上的天和不做的天都算没成单。")
-        return "\n\n".join([self.cfg["view"]["intro"], scoring, self.view.map(), ACTIONS])
+        active = [m.name for m in self.game.mechanisms if m.name]
+        intro = self.cfg["view"].get("part_a_intro", self.cfg["view"]["intro"]) if active else self.cfg["view"]["intro"]
+        rules = self.cfg["view"].get("mechanism_text", {}).get("rules", {})
+        extras = [rules[name] for name in active if name in rules]
+        return "\n\n".join([intro, scoring, self.view.map(), ACTIONS, *extras])
 
     def reset(self) -> str:
         """开局，返回第一天的观察。"""
         if self.game.phase != "new":
             self._build()
         self._lines, self._events = [], []
+        self._audit_cursor = 0
         self.game.start()
         return self._obs()
 
@@ -84,16 +91,19 @@ class Env:
         if self.done:
             raise RuntimeError("这一局已经结束了")
         kind = self.ask.kind
+        self._audit_cursor = len(self.game.audit)
         answers, error = self._parse(action)
         if error:
             return f"{error}\n{PROMPT[kind]}", False, self._info(action, kind, error)
         self._lines, self._events = [], []
         for a in answers:                                       # 「找 X」在「今天怎么办」时 = 留下 + 找 X
             self.game.step(a)
+            if self.game.decision_interrupted:
+                break  # 新口信先给玩家看，不能用旧答案购买。
         return self._obs(), self.done, self._info(action, kind)
 
     def legal_actions(self) -> list[str]:
-        """此刻能回的所有动作。可以给 agent 看，也可以不给（看实验设置）。"""
+        """有限的采购动作列表。传话的自由文本格式见 instructions，不能从待办生成答案。"""
         if self.game.phase == "new":
             raise RuntimeError("先调 reset()")
         if self.done:
@@ -102,6 +112,7 @@ class Env:
         if ask.kind == "death":
             return ["继续"]
         people = [f"找 {self.name(p)}" for p in ask.stalls] + ["不做"]
+        # 自由文本口信无法枚举；不从内部任务表生成动作，以免泄露待办。
         if ask.kind == "choose":
             return people
         return people + [f"去 {self.name(v)}" for v in self.game.world.villages if v != ask.here] + ["留下"]
@@ -117,8 +128,9 @@ class Env:
             return f"第 {self.game.life} 世已经结束。\n{PROMPT['death']}"
         return "\n".join([
             f"第 {self.game.life} 世，第 {ask.day} 天，当前在{self.name(ask.here)}。",
-            "当前订单：" + "、".join(f"{s}：{v}" for s, v in ask.want.items()) + "。",
-            self.view.say("stalls", stalls=ask.stalls), PROMPT[ask.kind],
+            "当前订单：" + "、".join(f"{s}：{v}" for s, v in ask.want.items()) + "。"
+            + ("须找" + self.view.reference(ask.reference) + "。" if ask.reference else ""),
+            self.view.say("stalls", stalls=ask.stalls), self._prompt(),
         ])
 
     @property
@@ -164,6 +176,7 @@ class Env:
             "day": w.day, "life": g.life, "day_in_life": len(g.log), "here": g.here, "want": dict(g.want),
             "nodes": {n: {"name": self.name(n), "layer": LAYERS[w.depth[n]], "parent": w.parent[n],
                           **{s: slot(n, s) for s in w.slots}} for n in range(len(w.depth))},
+            **({"mechanisms": g.mechanism_truth()} if g.mechanisms else {}),
         }
 
     # ---- 内部 ----
@@ -173,7 +186,13 @@ class Env:
         self._lines.append(self.view.say(kind, **kw))
 
     def _obs(self) -> str:
-        return "\n".join(self._lines + ([] if self.done else [PROMPT[self.ask.kind]]))
+        return "\n".join(self._lines + ([] if self.done else [self._prompt()]))
+
+    def _prompt(self):
+        text = PROMPT[self.ask.kind]
+        if self.ask.kind in ("go", "choose") and self.game.mechanism("prospective"):
+            text += "（也可先传话 <人名> <口信>，不耗一天。）"
+        return text
 
     def _parse(self, action: str) -> tuple[list, str | None]:
         """把动作翻成要送给 Game 的一两个主意；看不懂就返回提示。"""
@@ -181,6 +200,16 @@ class Env:
         if ask.kind == "death":
             return [None], None
         text = _TAIL.sub("", str(action).strip()).strip("「」“”\"'` ")
+        if text.startswith("传话"):
+            if not self.game.mechanism("prospective"):
+                return [], "这一局没有传话动作。"
+            message = re.fullmatch(r"传话\s+(\S+)\s+(.+)", text, re.DOTALL)
+            if not message or not normalize(message[2]):
+                return [], "格式是：传话 <人名> <口信>。"
+            person = next((p for p in ask.stalls if self.name(p) == message[1]), None)
+            if person is None:
+                return [], f"{self.name(ask.here)}没有叫「{message[1]}」的人。"
+            return [DeliverMessage(person, message[2])], None
         m = _ACTION.fullmatch(text)
         if not m:
             return [], f"看不懂这个动作：「{str(action).strip()}」。"
@@ -212,6 +241,8 @@ class Env:
             "action": action, "parse_ok": error is None, "error": error,
             "life_ended": any(e["kind"] == "death" for e in self._events) if error is None else False,
             "events": [] if error else self._events,              # 这一步发生的事；村和人都是节点编号
+            **({"mechanism_events": [] if error else self.game.audit[self._audit_cursor:]}
+               if self.game.mechanisms else {}),
         }
 
 
@@ -221,6 +252,11 @@ def main():
     ap.add_argument("--seed", type=int)
     a = ap.parse_args()
     env = Env(load(a.config), seed=a.seed)
+    interactive(env)
+
+
+def interactive(env):
+    """文本交互入口；Part A 和 LLM 使用相同的命令与反馈。"""
     print(env.instructions, "", env.reset(), sep="\n")
     while not env.done:
         try:
@@ -230,6 +266,8 @@ def main():
             return
         print(env.step(action)[0])
     print("\n每一世做成几单：" + "，".join(f"第 {i} 世 {sum(log)}/{len(log)}" for i, log in enumerate(env.lives, 1)))
+    if scores := env.game.mechanism_scores():
+        print("传话成绩：", scores["prospective"])
 
 
 if __name__ == "__main__":

@@ -14,6 +14,10 @@ LLM 对局适配与极简 dsh profile 在 [dsh/](dsh/)。安装、三种上下�
 模型输出预算、思考强度及各模式阈值统一在 [dsh/config.yml](dsh/config.yml) 调整。
 玩法状态、阶段转换和逐日结算由 `Game` 统一负责；文本接口与内核边界见 [docs/env.md](docs/env.md#内核与显示边界)。
 
+Part A 已加入五项独立开关：传闻、指称订单、改主意、前瞻任务、干扰信息。默认全部关闭；
+`uv run python -m strata.env --config config/part-a.toml` 开启全部，`uv run python -m strata.demo` 查看受控故事演示。
+开关、规则、传话计分和日志见 [docs/part-a.md](docs/part-a.md)。
+
 ## 世界的规则
 
 **结构**：一棵三层的树，地区 → 村 → 人。默认 3 个地区，每个地区 3 个村，每个村 4 个人。谁住哪个村永远不变。

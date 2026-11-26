@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { load as loadYaml, dump as dumpYaml } from 'js-yaml'
@@ -112,6 +112,50 @@ for (const mode of ['full', 'summary', 'notes']) {
       assert.ok(api.some(e => e.type === 'response' && e.stream.some(c => c.type === 'reasoning-delta')))
       assert.ok(!JSON.stringify(api.filter(e => e.type === 'request')).includes('source_layer'))
     })
+  })
+}
+
+for (const mode of ['full', 'summary', 'notes']) {
+  test(`${mode}: opening feedback reaches the first request and is appended once`, async () => {
+    const dir = mkdtempSync(join(root, 'opening-'))
+    const config = join(dir, 'part-a.toml')
+    writeFileSync(config, '[game]\nlives=2\nlife=4\ngap=10\n'
+      + '[mechanisms.rumor]\nenabled=true\nrate=1\n'
+      + '[mechanisms.prospective]\nenabled=true\nrate=1\n'
+      + '[mechanisms.distraction]\nenabled=true\n')
+    try {
+      await trial(mode, undefined, result => {
+        assert.equal(result.eval_completed, true, result.error)
+        assert.equal(result.daysPlayed, 8)
+        const env = rows(join(result.runDir, 'env.jsonl'))
+        const initial = env[0]
+        const kinds = new Set(initial.mechanism_events.map(event => event.kind))
+        for (const kind of ['rumor', 'task_issued', 'distraction']) {
+          assert.ok(kinds.has(kind), `opening fixture actually emits ${kind}`)
+        }
+        const requests = rows(join(result.runDir, 'api.jsonl')).filter(row => row.type === 'request')
+        const startup = requests[0].request.messages.filter(message => message.source?.kind === 'user')
+        assert.equal(startup.length, 1, 'start command and opening feedback use the same followup')
+        assert.equal(textOf({ messages: startup }).split(initial.feedback).length - 1, 1,
+          'the first request contains the complete opening feedback exactly once')
+        for (const request of requests) {
+          for (const privateField of ['source_layer', 'mechanism_events', 'task_ids', 'fabricated', 'mechanism_config', 'part-a-v1']) {
+            assert.ok(!JSON.stringify(request).includes(privateField), `${privateField} stays out of model input`)
+          }
+          const dynamic = request.request.messages.filter(message => message.source?.kind === 'runtime-context')
+          assert.ok(!textOf({ messages: dynamic }).includes(initial.feedback), 'redraws never replay the opening events')
+        }
+        const sessionRoot = join(result.runDir, 'sessions')
+        const sessionFile = readdirSync(sessionRoot, { recursive: true }).find(name => name.endsWith('session.v4.jsonl'))
+        assert.ok(sessionFile)
+        const openings = rows(join(sessionRoot, sessionFile)).filter(event => event.type === 'user/message'
+          && textOf({ messages: [event.data] }).includes(initial.feedback))
+        assert.equal(openings.length, 1, 'death, compaction and context switches never append the opening again')
+        assert.equal(env.filter(record => record.kind === 'continue').length, 1, 'the run covers rebirth')
+        assert.equal(result.summaryCalls > 0, mode === 'summary')
+        assert.equal(result.windows > 1, mode === 'notes')
+      }, { config })
+    } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 }
 

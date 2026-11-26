@@ -13,3 +13,32 @@ lives = 4               # 活几世
 life = 100              # 每一世活几天
 gap = 300               # 死后世界空转几天
 seed = 0
+
+# Part A：每项可独立启用。默认全部关闭，保留原版规则。
+[mechanisms.rumor]
+enabled = false
+rate = 0.5
+min_delay = 0
+max_delay = 5
+all_truthful = false
+credibility_slot = "守不守信"
+
+[mechanisms.reference_orders]
+enabled = false
+rate = 0.2
+max_hops = 2
+
+[mechanisms.revisions]
+enabled = false
+rate = 0.1
+max_revisions = 2
+
+[mechanisms.prospective]
+enabled = false
+rate = 0.15
+max_pending = 2
+
+[mechanisms.distraction]
+enabled = false
+useful_ratio = 0.5
+max_per_news = 2

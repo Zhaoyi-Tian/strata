@@ -15,6 +15,8 @@ def main():
     ap.add_argument("--early", type=int, default=20, help="重生后头几天单独统计")
     a = ap.parse_args()
     cfg = load(a.config)
+    if any(m.get("enabled", False) for m in cfg.get("mechanisms", {}).values()):
+        ap.error("现有规则基线尚未适配 Part A 的消息和指称，请用文本环境或 dsh 运行机制对局；全关仍可跑原版基线。")
     g = cfg["game"]
 
     game = Game(cfg)

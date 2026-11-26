@@ -48,6 +48,12 @@ node dsh/run.mjs \
 也可以在进程环境里设置 `DEEPSEEK_API_KEY` 并省略 `--env-file`。不要把 key 写进 YAML、命令参数或提交到仓库。
 短局是两世、每世四天，只用于检查接口。省略 `--config` 就使用默认的四世、每世一百天。
 
+Part A 使用 `--config config/part-a.toml`，五项机制可独立开关，详见 [Part A](part-a.md)。
+`strata_step.action` 仍为一个字符串；启用前瞻任务时新增 `传话 <人名> <口信>`。
+新机制的正确对象、消息真假和委托状态只写评测日志，不进入模型工具结果或动态画面。
+`run.json` 记录实际机制配置及协议：全关为 `daily-orders-v2`，启用机制为 `part-a-v1`。
+最终 `score.mechanisms.prospective` 单列传话成绩，采购分数口径保持不变。
+
 切换上下文模式只改 `--mode`：`full`、`summary`、`notes`。每次都新建一局和一个 Session；不能把同一局中途改成另一种模式作为对照。
 不需要先启动交互式 dsh，也不需要安装到 `$DSH_HOME`。
 
