@@ -33,7 +33,8 @@ export async function runEpisode(input = {}, { setup, signal } = {}) {
   positive(maxOutputTokens, 'model.maxOutputTokens')
   if (!['off', 'low', 'high', 'max'].includes(reasoningEffort)) throw new Error('model.reasoningEffort must be off, low, high, or max')
   positive(options.maxRequests, 'maxRequests')
-  positive(options.earlyDays ?? 20, 'earlyDays')
+  options.earlyDays ??= 20
+  positive(options.earlyDays, 'earlyDays')
   // Persist the effective summary budget instead of an unresolved inheritance marker.
   options.context.summary.maxOutputTokens ??= maxOutputTokens
   if (options.config) options.config = resolve(options.config)
@@ -42,7 +43,7 @@ export async function runEpisode(input = {}, { setup, signal } = {}) {
   mkdirSync(options.runDir, { recursive: true })
   const json = (file, value) => writeFileSync(join(options.runDir, file), JSON.stringify(value, null, 2) + '\n')
   json('run.json', { ...options, protocol: null })
-  json('config.json', { model: options.model, context: options.context, maxRequests: options.maxRequests })
+  json('config.json', { model: options.model, context: options.context, maxRequests: options.maxRequests, earlyDays: options.earlyDays })
   copyFileSync(profilePath, join(options.runDir, 'profile.yml'))
   writeFileSync(join(options.runDir, 'api.jsonl'), '', { flag: 'wx' })
   const calls = []
@@ -136,7 +137,7 @@ function summarizeRun(options, { game, agent, calls, error, reason, stoppedAtGam
   const completed = !error && current?.done === true && stoppedAtGameEnd && reason?.kind === 'blocked'
   const lives = current?.lives ?? []
   const all = lives.flat()
-  const earlyDays = options.earlyDays ?? 20
+  const { earlyDays } = options
   const early = lives.slice(1).flatMap(life => life.slice(0, earlyDays))
   const mean = values => values.length ? values.filter(Boolean).length / values.length : null
   const usage = {}

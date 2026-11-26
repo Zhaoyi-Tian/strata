@@ -73,7 +73,11 @@ def main():
     cfg = load(a.config)
     if a.seed is not None:
         cfg["game"]["seed"] = a.seed
-    if configured(cfg):
+    try:
+        mechanisms = configured(cfg)
+    except ValueError as error:
+        ap.error(str(error))
+    if mechanisms:
         from .env import Env, interactive
         interactive(Env(cfg))
         return

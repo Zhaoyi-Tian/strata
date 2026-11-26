@@ -246,8 +246,8 @@ class TestRevisions(unittest.TestCase):
         self.assertFalse(any(e["kind"] == "revision" for e in short.game.audit))
 
     def test_revising_a_referenced_order_drops_the_reference(self):
-        revision = Revisions(rate=1)
-        env = stable([ReferenceOrders(rate=1), revision])
+        revision, reference = Revisions(rate=1), ReferenceOrders(rate=1)
+        env = stable([reference, revision])
         env.reset()
         # 建立一次已向玩家反馈的真实交易，下一单就会点名找他。
         while env.game.days_played == 0:
@@ -260,6 +260,8 @@ class TestRevisions(unittest.TestCase):
         self.assertIsNone(env.game.order.target)
         self.assertIsNone(env.ask.reference)
         self.assertEqual(env.ask.version, 2)
+        self.assertEqual(env.game.order.hops, 0)
+        self.assertTrue(reference.orders[-1]["revoked"])           # 以后的两跳指称不能再顺着它指过去
 
 
 class TestProspective(unittest.TestCase):

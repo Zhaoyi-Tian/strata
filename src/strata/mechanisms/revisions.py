@@ -39,7 +39,7 @@ class Revisions(Mechanism):
         slot, value = rng.choice(alternatives)
         before, reference = dict(order.want), order.reference
         order.want[slot] = value
-        order.target = order.reference = None
+        order.target, order.reference, order.hops = None, None, 0
         order.version += 1
         order.versions.append({"version": order.version, "day": game.world.day, "want": dict(order.want)})
         self.count += 1

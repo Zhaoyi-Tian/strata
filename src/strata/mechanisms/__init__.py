@@ -13,6 +13,8 @@
 
 约定：
   机制要说话就用 game.emit(种类, ...)，别的机制也听得到；新的种类要在世界观的 [lines] 里加一行台词。
+  改了订单（比如改口）要把 game.order.version 加一：Env 靠它知道该停下来，先把新口信给玩家看。
+  同一时刻各机制按列表顺序被调用；Distraction 要排在最后，才数得到当天全部有用消息（configured 已这样排）。
   要私下记一笔就用 game.record(种类, ...)，只进评测审计，不给玩家。不要把答案放进公开事件。
   要随机数就用 self.rng(game, 日期, ...)，按日取、不要动 world.rng，走法不同也不会让后面的随机数错位。
   村和人都用世界节点编号，由 View 起名字。
@@ -100,7 +102,8 @@ def validate_view(cfg, mechanisms):
     view = cfg["view"]
     slots = [s["name"] for s in view["slots"]]
     for mechanism in mechanisms:
-        if mechanism.name == "rumor" and not mechanism.all_truthful and mechanism.credibility_slot not in slots:
+        if mechanism.name == "rumor" and not getattr(mechanism, "all_truthful", True) \
+                and getattr(mechanism, "credibility_slot", None) not in slots:
             raise ValueError("rumor.credibility_slot must name an existing slot")
         for key in required.get(mechanism.name, ()):
             if not isinstance(view["lines"].get(key), str):

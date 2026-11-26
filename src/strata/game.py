@@ -252,6 +252,10 @@ class Game:
             self.trades.append({"day": self.world.day, "person": person, "goods": goods, "outcome": outcome})
         elif outcome == "skip":
             self.emit("skip")
+        if self.mechanisms:                                     # 评测要知道每天结算的是哪一单、哪一版
+            self.record("settlement", order_id=self.order.id, version=self.order.version, target=self.order.target,
+                        outcome=outcome, person=person, wrong_person=wrong_person,
+                        actual={s: self.world.value(person, s) for s in self.want} if person is not None else None)
         self.emit("settled", outcome=outcome, person=person)
         g = self.cfg["game"]
         if len(self.log) == g["life"]:
